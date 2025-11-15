@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <title>{% block title %}{% endblock %} Password Reset</title>
+    {% endblock %}
+</head>
+
+
+
+<style>
+    h2, p { text-align: center;}
+
+    .form-row { display: flex; flex-direction: row;}
+
+    body {background-color: rgb(19, 6, 212);}
+
+    h1, h2, h4, p, li, label, .helptext{
+    color: rgb(255, 255, 255);
+}
+
+</style>
+
+
+<h2>Enter new password</h2>
+
+<p>We’ve emailed you instructions for setting your password, if an account exists with the email you entered. You should receive them shortly.</p>
+<p>Please enter your new password twice so we can verify you typed it in correctly.</p>
+
+
+<div class="container">
+
+    <div class="row">
+
+        <div class="col"></div>
+        <div class="col">
+            <form method="POST">
+                {% csrf_token %}
+                {{form}}
+                <input type="submit" class="btn btn-primary mt-2 mx-5"/>
+            </form>
+        </div>
+
+        <div class="col"></div>
+
+    </div>
+
+</div>
