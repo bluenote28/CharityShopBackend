@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-+v_2a^mx_b@v3xo$sh=ghj=9-azuf^4e!@(33(b59i8gses^v(
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', 'https://thecharityshop-9c7b08c3213c.herokuapp.com/']
 
 
 # Application definition
@@ -120,7 +120,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
         'USER': 'CharityShopDB',
-        'PASSWORD': 'zosoSeGITIjlSE5!STo2',
+        'PASSWORD': os.environ.get('DB_PASS'),
         'HOST': 'charityshop.cepw2ceeetb6.us-east-1.rds.amazonaws.com',
         'PORT': '5432',
     }
