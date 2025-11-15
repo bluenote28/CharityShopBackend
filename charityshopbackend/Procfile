@@ -1,1 +1,1 @@
-web: gunicorn charityshopbackend.wsgi
+web:gunicorn charityshopbackend.wsgi
