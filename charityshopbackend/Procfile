@@ -1,0 +1,1 @@
+web: gunicorn charityshopbackend.wsgi --log-file-
