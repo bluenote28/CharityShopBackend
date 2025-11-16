@@ -77,9 +77,8 @@ class RegisterUser(APIView):
             serializer = UserSerializerWithToken(user, many=False)
             return Response(serializer.data)
         
-        except Exception as e:
-            message = {'detail': e}
-            print(e)
+        except IntegrityError:
+            message = {'detail': 'User already exists'}
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
         
 
