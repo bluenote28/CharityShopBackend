@@ -80,6 +80,10 @@ class RegisterUser(APIView):
         except IntegrityError:
             message = {'detail': 'User already exists'}
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
+        except Error as e:
+            message = {'detail': e}
+            print(e)
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)    
         
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
