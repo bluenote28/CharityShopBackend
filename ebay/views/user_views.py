@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from ebay.serializers import UserSerializer, UserSerializerWithToken
 from django.contrib.auth.models import User
+from django.db import IntegrityError
+import smtplib
 from rest_framework import status
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -62,8 +64,6 @@ class GetUsers(APIView):
 
 class RegisterUser(APIView):
     def post(self, request):
-
-        print("request: ", request.data)
         
         try: 
             user = User.objects.create_user(
@@ -73,18 +73,20 @@ class RegisterUser(APIView):
                 first_name=request.data['first_name'],
                 last_name=request.data['last_name']
             )
-
-            serializer = UserSerializerWithToken(user, many=False)
-            return Response(serializer.data)
+        except smtplib.SMTPAuthenticationError: 
+            message = {'detail': 'Account Created. Redirect Failed. Please login from the login screen'}
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
         
         except IntegrityError:
             message = {'detail': 'User already exists'}
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
-        except Error as e:
-            message = {'detail': e}
-            print(e)
-            return Response(message, status=status.HTTP_400_BAD_REQUEST)    
         
+        except Exception as e:
+            message = {'detail': e}
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
+    
+        serializer = UserSerializerWithToken(user, many=False)
+        return Response(serializer.data)
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
