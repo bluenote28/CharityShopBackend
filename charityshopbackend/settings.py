@@ -5,10 +5,6 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = False
 CSRF_COOKIE_SECURE = True
@@ -18,7 +14,7 @@ SECURE_HSTS_SECONDS = 3600
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'thecharityshop-9c7b08c3213c.herokuapp.com', 'charityshop-digitalcatholic.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'thecharityshop-9c7b08c3213c.herokuapp.com']
 
 
 # Application definition
