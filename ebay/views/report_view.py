@@ -16,11 +16,11 @@ class EbayReportView(APIView):
         total_charities = Charity.objects.count()
 
         all_charities = Charity.objects.all()
-        items_per_charity = {}
+        items_per_charity = []
 
         for charity in all_charities:
             item_count = Item.objects.filter(charity=charity).count()
-            items_per_charity[charity.name] = item_count
+            items_per_charity.append({charity.name: item_count})
         
         report_data = {
             'total_items': total_items,
