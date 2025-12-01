@@ -25,37 +25,52 @@ class DatabaseLoader():
             
             response = self.client.getItems()
             
-            data = response["itemSummaries"]          
+            if 'itemSummaries' in response:
+           
+                data = response["itemSummaries"]     
 
-            for item in data:
+                for item in data:
 
-                if self.__containsInvalidWord(item['title']):
-                    continue
-                elif item['adultOnly'] == True:
-                    continue
-                else:
-                    single_item = {
-                        "name": item["title"],
-                        "price": item["price"]["value"],
-                        "img_url": item["thumbnailImages"][0]["imageUrl"],
-                        "web_url": item["itemWebUrl"],
-                        "charity": self.charity_id,
-                        "category": item["categories"][1]["categoryName"],
-                        "ebay_id": item["itemId"]
-                    }
-                
-                serializer = ItemSerializer(data=single_item)
+                    if self.__containsInvalidWord(item['title']):
+                        continue
+                    elif item['adultOnly'] == True:
+                        continue
+                    else:
 
-                if serializer.is_valid():
-                    serializer.save()
+                        try:
+                            single_item = {
+                                "name": item["title"],
+                                "price": item["price"]["value"],
+                                "img_url": item["thumbnailImages"][0]["imageUrl"],
+                                "web_url": item["itemWebUrl"],
+                                "charity": self.charity_id,
+                                "category": item["categories"][1]["categoryName"],
+                                "ebay_id": item["itemId"]
+                            }
 
-            if 'next' in response:
-                time.sleep(5)
-                self.client.charity_url = response['next']
-                self.load_items_to_db()
+                        except KeyError:
+                            single_item = {
+                                "name": item["title"],
+                                "price": item["price"]["value"],
+                                "img_url": "",
+                                "web_url": item["itemWebUrl"],
+                                "charity": self.charity_id,
+                                "category": item["categories"][1]["categoryName"],
+                                "ebay_id": item["itemId"]
+                            }
+                    
+                    serializer = ItemSerializer(data=single_item)
+
+                    if serializer.is_valid():
+                        serializer.save()
+
+                if 'next' in response:
+                    time.sleep(90)
+                    self.client.charity_url = response['next']
+                    self.load_items_to_db()
 
             return "Success"
-        
+             
         except Exception as e:
             return str(e)
                     
