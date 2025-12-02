@@ -11,6 +11,8 @@ try:
 except RuntimeError:
     pass
 
+print("Worker started...")
+
 listen = ['high', 'default', 'low']
 
 url = urlparse(os.environ.get("REDIS_URL"))
