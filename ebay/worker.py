@@ -3,6 +3,10 @@ from urllib.parse import urlparse
 import redis
 from rq import Worker, Queue, Connection
 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'charityshopbackend.settings')
+import django
+django.setup()
+
 listen = ['high', 'default', 'low']
 
 url = urlparse(os.environ.get("REDIS_URL"))
