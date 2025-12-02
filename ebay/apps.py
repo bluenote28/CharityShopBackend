@@ -6,4 +6,3 @@ class EbayConfig(AppConfig):
 
     def ready(self):
         import ebay.signals
-        from .models import Charity, Item
