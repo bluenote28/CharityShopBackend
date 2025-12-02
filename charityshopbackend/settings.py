@@ -14,7 +14,7 @@ SECURE_HSTS_SECONDS = 3600
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'thecharityshop-9c7b08c3213c.herokuapp.com']
+ALLOWED_HOSTS = ['thecharityshop-9c7b08c3213c.herokuapp.com']
 
 
 # Application definition
@@ -126,6 +126,15 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get('REDIS_URL'),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -176,9 +185,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-     "http://localhost:3000",
-     "http://127.0.0.1:3000",
-     "https://main.d3ky9hapmr6avy.amplifyapp.com"
-    
+     "https://main.d3ky9hapmr6avy.amplifyapp.com"   
 ]
 
