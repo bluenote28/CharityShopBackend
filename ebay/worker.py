@@ -6,13 +6,19 @@ from rq import Worker, Queue, Connection
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'charityshopbackend.settings')
 import django
 
-if not django.apps.apps.ready:
+if django.apps.apps.ready:
+    listen = ['high', 'default', 'low']
+
+    url = urlparse(os.environ.get("REDIS_URL"))
+    conn = redis.Redis(host=url.hostname, port=url.port, password=url.password, ssl=(url.scheme == "rediss"), ssl_cert_reqs=None)
+
+else:
     django.setup()
 
-listen = ['high', 'default', 'low']
+    listen = ['high', 'default', 'low']
 
-url = urlparse(os.environ.get("REDIS_URL"))
-conn = redis.Redis(host=url.hostname, port=url.port, password=url.password, ssl=(url.scheme == "rediss"), ssl_cert_reqs=None)
+    url = urlparse(os.environ.get("REDIS_URL"))
+    conn = redis.Redis(host=url.hostname, port=url.port, password=url.password, ssl=(url.scheme == "rediss"), ssl_cert_reqs=None)
 
 if __name__ == '__main__':
     with Connection(conn):
