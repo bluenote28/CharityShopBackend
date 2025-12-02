@@ -5,7 +5,7 @@ from ebay.load_data_to_db import DatabaseLoader
 from django.core.mail import send_mail
 from django.conf import settings
 from rq import Queue
-from worker import conn
+from .worker import conn
 
 def updateUser(sender, instance, **kwargs):
     user = instance
