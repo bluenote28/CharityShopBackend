@@ -5,7 +5,9 @@ from rq import Worker, Queue, Connection
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'charityshopbackend.settings')
 import django
-django.setup()
+
+if not django.apps.apps.ready:
+    django.setup()
 
 listen = ['high', 'default', 'low']
 
