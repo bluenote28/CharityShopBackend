@@ -4,6 +4,8 @@ from .models import Charity
 from ebay.load_data_to_db import DatabaseLoader
 from django.core.mail import send_mail
 from django.conf import settings
+from rq import Queue
+from worker import conn
 
 def updateUser(sender, instance, **kwargs):
     user = instance
@@ -17,7 +19,9 @@ def loadDatabase(sender, instance, **kwargs):
     charity = instance
     charity_id = charity.id
     dbLoader = DatabaseLoader(charity_id)
-    dbLoader.load_items_to_db()
+
+    q = Queue(connection=conn)
+    q.enqueue(dbLoader.load_items_to_db, 'http://heroku.com')
 
 post_save.connect(loadDatabase, sender=Charity)
 
