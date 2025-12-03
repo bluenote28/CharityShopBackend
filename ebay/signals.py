@@ -16,13 +16,15 @@ def updateUser(sender, instance, **kwargs):
 pre_save.connect(updateUser, sender=User)
 
 def loadDatabase(sender, instance, **kwargs):
+    
+    print("Loading Database Signal Triggered")
     charity = instance
     charity_id = charity.id
     dbLoader = DatabaseLoader(charity_id)
 
     q = Queue(connection=conn)
-    q.enqueue(dbLoader.load_items_to_db, 'http://heroku.com')
-
+    q.enqueue(dbLoader.update_database, job_timeout=7200)
+ 
 post_save.connect(loadDatabase, sender=Charity)
 
 
