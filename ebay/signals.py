@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rq import Queue
 from .worker import conn
+from .tasks import update_database_job
 
 def updateUser(sender, instance, **kwargs):
     user = instance
@@ -20,10 +21,9 @@ def loadDatabase(sender, instance, **kwargs):
     print("Loading Database Signal Triggered")
     charity = instance
     charity_id = charity.id
-    dbLoader = DatabaseLoader(charity_id)
 
     q = Queue(connection=conn)
-    q.enqueue(dbLoader.update_database, job_timeout=7200)
+    q.enqueue(update_database_job, charity_id, job_timeout=7200)
  
 post_save.connect(loadDatabase, sender=Charity)
 
