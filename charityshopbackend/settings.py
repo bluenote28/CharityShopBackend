@@ -127,11 +127,23 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get('REDIS_URL'),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+             "CONNECTION_POOL_KWARGS": {
+                "ssl_cert_reqs": None
+            },
+        }
+    }
+}
+
 RQ_QUEUES = {
     "default": {
-        "URL": os.environ.get('REDIS_URL'),
-        "DEFAULT_TIMEOUT": 360,
-        "SSL_CERT_REQS": None,
+      'USE_REDIS_CACHE': 'default',
+        'DEFAULT_TIMEOUT': 10000,
     },
 }
 
