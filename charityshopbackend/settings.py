@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'ebay.apps.EbayConfig',
-    'django_rest_passwordreset'
+    'django_rest_passwordreset', 
+    "django_rq"
 ]
 
 REST_FRAMEWORK = {
@@ -126,17 +127,12 @@ DATABASES = {
     }
 }
 
-CACHES = {
+RQ_QUEUES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.environ.get('REDIS_URL'),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-             "CONNECTION_POOL_KWARGS": {
-                "ssl_cert_reqs": None
-            },
-        }
-    }
+        "URL": os.environ.get('REDIS_URL'),
+        "DEFAULT_TIMEOUT": 360,
+        "SSL_CERT_REQS": None,
+    },
 }
 
 # Password validation
