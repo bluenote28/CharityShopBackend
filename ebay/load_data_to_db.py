@@ -1,7 +1,5 @@
 import time
-from .serializers import ItemSerializer
 from .ebay_client import EbayClient
-from .models import Item, Charity
 
 WORD_FILTER = {'playboy'}
 
@@ -20,6 +18,8 @@ class DatabaseLoader():
         return False
     
     def load_items_to_db(self):
+        from .models import Charity
+        from .serializers import ItemSerializer
 
         try:
 
@@ -78,7 +78,7 @@ class DatabaseLoader():
             return str(e)
                     
     def update_database(self):
-        
+        from .models import Charity
         all_charities = Charity.objects.all()
 
         for charity in all_charities:
