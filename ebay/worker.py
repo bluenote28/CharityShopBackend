@@ -1,4 +1,4 @@
 import django_rq
 
-worker = django_rq.get_worker()
-worker.work()
+if __name__ == "__main__":
+    worker = django_rq.get_worker('default')

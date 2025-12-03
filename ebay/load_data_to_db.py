@@ -76,11 +76,3 @@ class DatabaseLoader():
              
         except Exception as e:
             return str(e)
-                    
-    def update_database(self):
-        from .models import Charity
-        all_charities = Charity.objects.all()
-
-        for charity in all_charities:
-            self.client.charity_id = charity.id
-            self.load_items_to_db()
