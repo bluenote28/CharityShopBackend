@@ -24,7 +24,7 @@ class DatabaseLoader():
         try:
 
             if Charity.objects.filter(id=self.charity_id).exists():
-                Charity.objects.get(id=self.charity_id).items.all().delete()
+                Charity.objects.get(id=self.charity_id).delete()
             
             response = self.client.getItems()
             
