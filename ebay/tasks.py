@@ -1,11 +1,9 @@
 from django_rq import job
 
 @job
-def update_database():
+def update_database(charity_id):
         from .models import Charity
         from .load_data_to_db import DatabaseLoader
-        all_charities = Charity.objects.all()
 
-        for charity in all_charities:
-            loader = DatabaseLoader(charity.id)
-            loader.load_items_to_db()
+        loader = DatabaseLoader(charity_id)
+        loader.load_items_to_db()
