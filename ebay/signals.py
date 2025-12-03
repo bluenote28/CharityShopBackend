@@ -4,9 +4,7 @@ from .models import Charity
 from django.core.mail import send_mail
 from django.conf import settings
 import django_rq 
-from .worker import conn
 from .tasks import update_database_job
-from urllib.parse import urlparse
 
 def updateUser(sender, instance, **kwargs):
     user = instance
@@ -23,8 +21,6 @@ def loadDatabase(sender, instance, **kwargs):
     charity_id = charity.id
 
     django_rq.enqueue(update_database_job, charity_id, job_timeout=7200)
-    worker = django_rq.get_worker()
-    worker.work()
  
 post_save.connect(loadDatabase, sender=Charity)
 
