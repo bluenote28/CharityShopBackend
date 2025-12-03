@@ -1,12 +1,12 @@
 from django.db.models.signals import pre_save, post_save
 from django.contrib.auth.models import User
 from .models import Charity
-from ebay.load_data_to_db import DatabaseLoader
 from django.core.mail import send_mail
 from django.conf import settings
-from rq import Queue
+import django_rq 
 from .worker import conn
 from .tasks import update_database_job
+from urllib.parse import urlparse
 
 def updateUser(sender, instance, **kwargs):
     user = instance
@@ -22,8 +22,9 @@ def loadDatabase(sender, instance, **kwargs):
     charity = instance
     charity_id = charity.id
 
-    q = Queue(connection=conn)
-    q.enqueue(update_database_job, charity_id, job_timeout=7200)
+    django_rq.enqueue(update_database_job, charity_id, job_timeout=7200)
+    worker = django_rq.get_worker()
+    worker.work()
  
 post_save.connect(loadDatabase, sender=Charity)
 
