@@ -1,7 +1,11 @@
-import django_rq 
+from django_rq import job
 
 @job
-def update_database_job(charity_id):
-    from ebay.load_data_to_db import DatabaseLoader
-    loader = DatabaseLoader(charity_id)
-    loader.load_items_to_db()
+def update_database():
+        from .models import Charity
+        from .load_data_to_db import DatabaseLoader
+        all_charities = Charity.objects.all()
+
+        for charity in all_charities:
+            loader = DatabaseLoader(charity.id)
+            loader.load_items_to_db()
