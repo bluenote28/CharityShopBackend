@@ -36,6 +36,10 @@ class EbayClient():
                 return app_token.access_token
         
         def getItems(self):
-            token = self._get_ebay_token()
-            response = requests.get(f'{self.charity_url}', headers={"Authorization": f'Bearer {token}'})
-            return response.json()
+            try:
+                token = self._get_ebay_token()
+                response = requests.get(f'{self.charity_url}', headers={"Authorization": f'Bearer {token}'})
+                return response.json()
+            except Exception as e:
+                print(f"Error fetching items from eBay API: {e}")
+                return {} 
