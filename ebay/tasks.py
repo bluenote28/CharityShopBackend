@@ -3,7 +3,7 @@ from django_rq import job
 
 charity = None
 
-@job('default', timeout=7200)
+@job('default', timeout=15000)
 def update_database(charity_id):
 
     global charity 
