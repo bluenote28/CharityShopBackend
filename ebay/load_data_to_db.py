@@ -20,11 +20,10 @@ class DatabaseLoader():
     def load_items_to_db(self):
         from .models import Charity
         from .serializers import ItemSerializer
+        
+        print("Loading items to database...")
 
         try:
-
-            if Charity.objects.filter(id=self.charity_id).exists():
-                Charity.objects.get(id=self.charity_id).delete()
             
             response = self.client.getItems()
             
