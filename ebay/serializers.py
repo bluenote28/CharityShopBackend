@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Charity, Item
+from .models import Charity, Item, FavoriteList
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -11,6 +11,15 @@ class CharitySerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
+        fields = '__all__'
+
+class FavoriteListSerializer(serializers.ModelSerializer):
+
+    items = ItemSerializer(many=True, read_only=True)
+    charities = CharitySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = FavoriteList
         fields = '__all__'
 
 class UserSerializer(serializers.ModelSerializer):
