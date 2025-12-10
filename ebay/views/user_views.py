@@ -2,7 +2,9 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response    
 from rest_framework.views import APIView
 from ebay.serializers import UserSerializer, UserSerializerWithToken
+from ebay.models import FavoriteList
 from django.contrib.auth.models import User
+from ebay.serializers import FavoriteListSerializer
 from django.db import IntegrityError
 import smtplib
 from rest_framework import status
@@ -63,6 +65,13 @@ class GetUsers(APIView):
         return Response(serializer.data)
 
 class RegisterUser(APIView):
+    
+    def createFavoriteList(self, user_id):
+        favorite_list = FavoriteList.objects.create(user_id=user_id)
+        favorite_list.items.clear()
+        favorite_list.charities.clear()
+        favorite_list.save()
+    
     def post(self, request):
         
         try: 
@@ -75,6 +84,7 @@ class RegisterUser(APIView):
             )
         except smtplib.SMTPAuthenticationError: 
             message = {'detail': 'Account Created. Redirect Failed. Please login from the login screen'}
+            self.createFavoriteList(user.id)
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
         
         except IntegrityError:
@@ -84,7 +94,9 @@ class RegisterUser(APIView):
         except Exception as e:
             message = {'detail': e}
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
-    
+              
+        self.createFavoriteList(user.id)
+
         serializer = UserSerializerWithToken(user, many=False)
         return Response(serializer.data)
 
