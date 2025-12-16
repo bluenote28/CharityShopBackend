@@ -36,7 +36,8 @@ class FavoriteListView(APIView):
         favorite_list = FavoriteList.objects.get(user=user)
 
         if 'item' in data:
-            favorite_list.items.remove(data['item'])
+            item = Item.objects.get(ebay_id=data['item'])
+            favorite_list.items.remove(item)
 
         if 'charity' in data:
             favorite_list.charities.remove(data['charity'])
