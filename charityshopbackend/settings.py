@@ -10,7 +10,7 @@ DEBUG = False
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 3600
+SECURE_HSTS_SECONDS = 36000000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
@@ -196,6 +196,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-     "https://main.d3ky9hapmr6avy.amplifyapp.com"   
+     "https://main.d3ky9hapmr6avy.amplifyapp.com",
+     "https://www.charityshopusa.com"   
 ]
 
