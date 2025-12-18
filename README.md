@@ -4,5 +4,5 @@ The backend code for: https://main.d3ky9hapmr6avy.amplifyapp.com/
 
 # Highlights
 
-A client class that interacts with Ebay. See ebay/ebay_client.py
+A client class that interacts with Ebay. See [ebay/ebay_client.py](https://github.com/bluenote28/CharityShopBackend/blob/main/ebay/ebay_client.py)
 
