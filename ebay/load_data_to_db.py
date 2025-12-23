@@ -39,12 +39,7 @@ class DatabaseLoader():
                         continue
                     elif item['adultOnly'] == True:
                         continue
-                    elif itemInDatabase(item['itemId']):
-                        print("cuirrent item")
-                        continue
                     else:
-
-                        print("new item")
 
                         try:
                             single_item = {
@@ -82,16 +77,3 @@ class DatabaseLoader():
              
         except Exception as e:
             return str(e)
-        
-
-    def refresh_charity_items(self):
-
-        current_items = Item.objects.all(charity=self.charity_id)
-
-        self.load_items_to_db()
-
-
-
-
-         
-
