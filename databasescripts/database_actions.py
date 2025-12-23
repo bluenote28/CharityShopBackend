@@ -1,4 +1,4 @@
-from ebay.models import Charity
+from ebay.models import Charity, Item
 from ebay.serializers import CharitySerializer
 
 def deleteCharity(id):
@@ -20,3 +20,14 @@ def addCharity(charity_data):
         return "Success"
     else:
         return "Failure"
+    
+def itemInDatabase(item_id):
+
+   try: 
+        item = Item.objects.get(ebay_id=item_id)
+        return True
+
+   except item.DoesNotExist:
+       return False
+
+    
