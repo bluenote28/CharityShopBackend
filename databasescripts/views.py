@@ -19,10 +19,6 @@ class RefreshDatabaseView(APIView):
       
         charity_id = request.data['id']
 
-        deleteCharity(charity_id)
-
-        addCharity(request.data)
-
         close_old_connections()
 
         redis_url = os.getenv('REDIS_URL')
