@@ -29,5 +29,8 @@ def itemInDatabase(item_id):
 
    except item.DoesNotExist:
        return False
+   
+   except Exception as e:
+       print(e)
 
     
