@@ -39,6 +39,8 @@ class DatabaseLoader():
                         continue
                     elif item['adultOnly'] == True:
                         continue
+                    elif itemInDatabase(item['itemId']) == True:
+                        continue
                     else:
 
                         try:
