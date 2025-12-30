@@ -1,6 +1,10 @@
 from rq import Worker, Queue
 import os
 import redis
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "charityshopbackend.settings")
+django.setup()
 
 LISTEN_QUEUES = ["default"]
 
