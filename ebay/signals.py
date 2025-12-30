@@ -4,16 +4,14 @@ from .models import Charity
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import close_old_connections
-import django_rq 
-import redis
-import os
 from .tasks import update_database
+from rq import Queue
+from .worker import conn
 
 def updateUser(sender, instance, **kwargs):
     user = instance
     if user.email != '':
         user.username = user.email
-
 
 pre_save.connect(updateUser, sender=User)
 
@@ -23,16 +21,10 @@ def loadDatabase(sender, instance, **kwargs):
     charity = instance
     charity_id = charity.id
 
-    redis_url = os.getenv('REDIS_URL')
-    
-    redis_conn = redis.StrictRedis.from_url(redis_url, ssl_cert_reqs=None)
-
-    queue = django_rq.get_queue('default', connection=redis_conn)
-
-    queue.enqueue(update_database, charity_id, job_timeout=7200)
+    q = Queue(connection=conn)
+    q.enqueue(update_database, charity_id, job_timeout=7200)
  
 post_save.connect(loadDatabase, sender=Charity)
-
 
 def registeredUser(sender, instance, created, **kwargs):
     
