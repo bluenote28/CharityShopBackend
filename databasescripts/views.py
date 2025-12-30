@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAdminUser
 from ebay.tasks import update_database
 from django.db import close_old_connections
 from .database_actions import deleteCharity, addCharity
+from rq import Queue
+from ebay.worker import conn
 
 class RefreshDatabaseView(APIView):
 
@@ -21,12 +23,7 @@ class RefreshDatabaseView(APIView):
 
         close_old_connections()
 
-        redis_url = os.getenv('REDIS_URL')
-        
-        redis_conn = redis.StrictRedis.from_url(redis_url, ssl_cert_reqs=None)
-
-        queue = django_rq.get_queue('default', connection=redis_conn)
-
-        queue.enqueue(update_database, charity_id, job_timeout=7200)
+        q = Queue(connection=conn)
+        q.enqueue(update_database, charity_id, job_timeout=7200)
 
         return Response("success")
