@@ -1,2 +1,2 @@
 web: gunicorn charityshopbackend.wsgi
-worker: python manage.py rqworker default
+worker: python ebay/worker.py
