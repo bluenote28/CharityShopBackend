@@ -1,7 +1,5 @@
 import time
 from .ebay_client import EbayClient
-from .models import Item
-from databasescripts.database_actions import deleteCharity, addCharity, itemInDatabase
 
 WORD_FILTER = {'playboy'}
 
@@ -20,14 +18,20 @@ class DatabaseLoader():
         return False
     
     def load_items_to_db(self):
-        from .models import Charity
         from .serializers import ItemSerializer
+        from databasescripts.database_actions import itemInDatabase
         
         print("Loading items to database...")
 
         try:
+
+            print(f"Fetching items for charity ID: {self.charity_id}")
             
             response = self.client.getItems()
+
+            print("Response received from eBay API:")
+
+            print(response)
             
             if 'itemSummaries' in response:
            
@@ -78,4 +82,5 @@ class DatabaseLoader():
             return "Success"
              
         except Exception as e:
+            print(f"Error loading items to database: {e}")
             return str(e)
