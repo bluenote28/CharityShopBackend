@@ -36,9 +36,10 @@ class DatabaseLoader():
             if 'itemSummaries' in response:
            
                 data = response["itemSummaries"]   
-                logger.info(data[0:2])  
 
                 for item in data:
+
+                    logger.info(f"processing item: {item}")
 
                     if self.__containsInvalidWord(item['title']):
                         continue
