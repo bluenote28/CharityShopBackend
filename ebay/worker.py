@@ -6,7 +6,7 @@ LISTEN_QUEUES = ["default"]
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
-conn = redis.from_url(REDIS_URL)
+conn = redis.from_url(REDIS_URL, ssl_cert_reqs=None)
 
 def start_worker():
     queues = [Queue(name, conn) for name in LISTEN_QUEUES]
