@@ -1,6 +1,7 @@
 import time
 from .ebay_client import EbayClient
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy'}
@@ -69,10 +70,10 @@ class DatabaseLoader():
                                 "ebay_id": item["itemId"]
                             }
                     
-                        serializer = ItemSerializer(data=single_item)
+                    serializer = ItemSerializer(data=single_item)
 
-                        if serializer.is_valid():
-                            serializer.save()
+                    if serializer.is_valid():
+                        serializer.save()
 
                 if 'next' in response:
                     time.sleep(90)
@@ -83,4 +84,5 @@ class DatabaseLoader():
              
         except Exception as e:
             logger.error(f"Error loading items to database: {e}")
+            logger.error(traceback.format_exc())
             return str(e)
