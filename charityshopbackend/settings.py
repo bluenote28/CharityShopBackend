@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'ebay.apps.EbayConfig',
     'django_rest_passwordreset', 
-    "django_rq",
     'databasescripts.apps.DatabasescriptsConfig'
 ]
 
@@ -130,22 +129,12 @@ DATABASES = {
 
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": os.environ.get('REDIS_URL'),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-             "CONNECTION_POOL_KWARGS": {
+        "OPTIONS": {       
                 "ssl_cert_reqs": None
-            },
         }
     }
-}
-
-RQ_QUEUES = {
-    "default": {
-      'USE_REDIS_CACHE': 'default',
-        'DEFAULT_TIMEOUT': 10000,
-    },
 }
 
 # Password validation
