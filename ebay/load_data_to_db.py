@@ -31,7 +31,7 @@ class DatabaseLoader():
 
             print("Response received from eBay API:")
 
-            print(response)
+            print(response["itemSummaries"] if 'itemSummaries' in response else "No item summaries found.")
             
             if 'itemSummaries' in response:
            
