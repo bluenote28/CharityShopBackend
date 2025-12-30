@@ -1,6 +1,8 @@
 import time
 from .ebay_client import EbayClient
+import logging
 
+logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy'}
 
 class DatabaseLoader():
@@ -21,17 +23,17 @@ class DatabaseLoader():
         from .serializers import ItemSerializer
         from databasescripts.database_actions import itemInDatabase
         
-        print("Loading items to database...")
+        logger.info("Loading items to database...")
 
         try:
 
-            print(f"Fetching items for charity ID: {self.charity_id}")
+            logger.info(f"Fetching items for charity ID: {self.charity_id}")
             
             response = self.client.getItems()
 
-            print("Response received from eBay API:")
+            logger.info("Response received from eBay API:")
 
-            print(response["itemSummaries"] if 'itemSummaries' in response else "No item summaries found.")
+            logger.info(response["itemSummaries"] if 'itemSummaries' in response else "No item summaries found.")
             
             if 'itemSummaries' in response:
            
