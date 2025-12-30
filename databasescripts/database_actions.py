@@ -27,7 +27,7 @@ def itemInDatabase(item_id):
         item = Item.objects.get(ebay_id=item_id)
         return True
 
-   except item.DoesNotExist:
+   except Item.DoesNotExist:
        return False
    
    except Exception as e:
