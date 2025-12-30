@@ -1,9 +1,6 @@
 import os
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "charityshopbackend.settings")
-django.setup()
-
 def update_database(charity_id):
 
     try:
