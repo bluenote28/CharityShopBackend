@@ -39,8 +39,6 @@ class DatabaseLoader():
 
                 for item in data:
 
-                    logger.info(f"processing item: {item}")
-
                     if self.__containsInvalidWord(item['title']):
                         continue
                     elif item['adultOnly'] == True:
@@ -71,10 +69,10 @@ class DatabaseLoader():
                                 "ebay_id": item["itemId"]
                             }
                     
-                    serializer = ItemSerializer(data=single_item)
+                        serializer = ItemSerializer(data=single_item)
 
-                    if serializer.is_valid():
-                        serializer.save()
+                        if serializer.is_valid():
+                            serializer.save()
 
                 if 'next' in response:
                     time.sleep(90)
