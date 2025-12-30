@@ -32,12 +32,11 @@ class DatabaseLoader():
             response = self.client.getItems()
 
             logger.info("Response received from eBay API:")
-
-            logger.info(response["itemSummaries"] if 'itemSummaries' in response else "No item summaries found.")
             
             if 'itemSummaries' in response:
            
-                data = response["itemSummaries"]     
+                data = response["itemSummaries"]   
+                logger.info(data[0:2])  
 
                 for item in data:
 
@@ -84,5 +83,5 @@ class DatabaseLoader():
             return "Success"
              
         except Exception as e:
-            print(f"Error loading items to database: {e}")
+            logger.error(f"Error loading items to database: {e}")
             return str(e)
