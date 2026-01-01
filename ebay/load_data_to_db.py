@@ -2,7 +2,6 @@ import time
 from .ebay_client import EbayClient
 import logging
 import traceback
-from django.db import JSONField
 
 logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy'}
