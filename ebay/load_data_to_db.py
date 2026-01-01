@@ -87,8 +87,6 @@ class DatabaseLoader():
                         logger.info(f"✅ Item {single_item['ebay_id']} saved")
                         logger.info(f"📋 category_list right after save: {single_item['category_list']}")
                         logger.info(f"📋 Type: {type(single_item['category_list'])}")
-
-                        single_item.refresh_from_db()
                         logger.info(f"After refresh_from_db: {single_item['category_list']}")
                     else:
                         logger.error(f"Serializer validation failed: {serializer.errors}")
