@@ -2,7 +2,6 @@ import time
 from .ebay_client import EbayClient
 import logging
 import traceback
-import json
 
 logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy'}
@@ -57,7 +56,7 @@ class DatabaseLoader():
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
-                                "category_list": json.dumps({"categories": item["categories"]}),
+                                "category_list": {"categories": item["categories"]},
                                 "ebay_id": item["itemId"]
                             }
 
@@ -69,7 +68,7 @@ class DatabaseLoader():
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
-                                "category_list": json.dumps({"categories": item["categories"]}),
+                                "category_list": {"categories": item["categories"]},
                                 "ebay_id": item["itemId"]
                             }
 
