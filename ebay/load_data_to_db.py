@@ -75,6 +75,10 @@ class DatabaseLoader():
                         except Exception as e:
                             logger.error(f"Error processing item {item['itemId']}: {e}")
                             continue
+
+                        logger.info(f"Data being sent to serializer: {single_item}")
+                        logger.info(f"category_list value: {single_item.get('category_list')}")
+                        logger.info(f"category_list type: {type(single_item.get('category_list'))}")
                     
                     serializer = ItemSerializer(data=single_item)
 
