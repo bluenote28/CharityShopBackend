@@ -57,7 +57,6 @@ class DatabaseLoader():
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
                                 "category_list": item["categories"],
-                                "condition": item["condition"],
                                 "ebay_id": item["itemId"]
                             }
 
@@ -70,7 +69,6 @@ class DatabaseLoader():
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
                                 "category_list": item["categories"],
-                                "condition": item["condition"],
                                 "ebay_id": item["itemId"]
                             }
 
