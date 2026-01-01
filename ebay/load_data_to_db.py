@@ -56,6 +56,8 @@ class DatabaseLoader():
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
+                                "category_list": item["categories"],
+                                "condition": item["condition"],
                                 "ebay_id": item["itemId"]
                             }
 
@@ -63,12 +65,18 @@ class DatabaseLoader():
                             single_item = {
                                 "name": item["title"],
                                 "price": item["price"]["value"],
-                                "img_url": "",
+                                "img_url": item["image"]["imageUrl"],
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
+                                "category_list": item["categories"],
+                                "condition": item["condition"],
                                 "ebay_id": item["itemId"]
                             }
+
+                        except Exception as e:
+                            logger.error(f"Error processing item {item['itemId']}: {e}")
+                            continue
                     
                     serializer = ItemSerializer(data=single_item)
 
