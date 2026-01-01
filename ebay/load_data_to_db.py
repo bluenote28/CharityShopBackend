@@ -2,6 +2,7 @@ import time
 from .ebay_client import EbayClient
 import logging
 import traceback
+from django.db import JSONField
 
 logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy'}
@@ -56,7 +57,7 @@ class DatabaseLoader():
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
-                                "category_list": {"categories": item["categories"]},
+                                "category_list": item["categories"],
                                 "ebay_id": item["itemId"]
                             }
 
@@ -68,7 +69,7 @@ class DatabaseLoader():
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
-                                "category_list": {"categories": item["categories"]},
+                                "category_list": item["categories"],
                                 "ebay_id": item["itemId"]
                             }
 
