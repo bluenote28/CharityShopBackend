@@ -20,6 +20,8 @@ class Item(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     category = models.CharField(max_length=100, null=True)
+    category_list = models.JSONField(null=True)
+    condition = models.CharField(max_length=50, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
