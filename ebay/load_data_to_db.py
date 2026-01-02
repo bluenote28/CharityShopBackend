@@ -23,16 +23,10 @@ class DatabaseLoader():
     def load_items_to_db(self):
         from .serializers import ItemSerializer
         from databasescripts.database_actions import itemInDatabase
-        
-        logger.info("Loading items to database...")
 
         try:
-
-            logger.info(f"Fetching items for charity ID: {self.charity_id}")
             
             response = self.client.getItems()
-
-            logger.info("Response received from eBay API:")
             
             if 'itemSummaries' in response:
            
@@ -75,19 +69,11 @@ class DatabaseLoader():
                         except Exception as e:
                             logger.error(f"Error processing item {item['itemId']}: {e}")
                             continue
-
-                        logger.info(f"Data being sent to serializer: {single_item}")
-                        logger.info(f"category_list value: {single_item.get('category_list')}")
-                        logger.info(f"category_list type: {type(single_item.get('category_list'))}")
                     
                     serializer = ItemSerializer(data=single_item)
 
                     if serializer.is_valid():
                         serializer.save()
-                        logger.info(f"✅ Item {single_item['ebay_id']} saved")
-                        logger.info(f"📋 category_list right after save: {single_item['category_list']}")
-                        logger.info(f"📋 Type: {type(single_item['category_list'])}")
-                        logger.info(f"After refresh_from_db: {single_item['category_list']}")
                     else:
                         logger.error(f"Serializer validation failed: {serializer.errors}")
 
