@@ -16,7 +16,7 @@ class Item(models.Model):
     ebay_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     img_url = models.URLField()
-    web_url = models.URLField(max_length=300)
+    web_url = models.URLField(max_length=350)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     category = models.CharField(max_length=100, null=True)
