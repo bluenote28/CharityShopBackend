@@ -55,17 +55,8 @@ class DatabaseLoader():
                             }
 
                         except KeyError:
-                            single_item = {
-                                "name": item["title"],
-                                "price": item["price"]["value"],
-                                "img_url": item["image"]["imageUrl"],
-                                "web_url": item["itemWebUrl"],
-                                "charity": self.charity_id,
-                                "category": item["categories"][1]["categoryName"],
-                                "category_list": item["categories"],
-                                "ebay_id": item["itemId"]
-                            }
-
+                            continue
+                        
                         except Exception as e:
                             logger.error(f"Error processing item {item['itemId']}: {e}")
                             continue
