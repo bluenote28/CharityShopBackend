@@ -11,7 +11,6 @@ def deleteCharity(id):
         print(f"Error deleting charity: {e}")
         return e
 
-
 def addCharity(charity_data):
 
     serializer = CharitySerializer(data=charity_data)
@@ -33,4 +32,15 @@ def itemInDatabase(item_id):
    except Exception as e:
        print(e)
 
+def retrieveItem(item_id):
+
+   try: 
+        item = Item.objects.get(ebay_id=item_id)
+        return item
+
+   except Item.DoesNotExist:
+       return None
+   
+   except Exception as e:
+       print(e)
     
