@@ -43,4 +43,13 @@ def retrieveItem(item_id):
    
    except Exception as e:
        print(e)
+
+def getItemsByCategory(category_id):
+
+    try: 
+        items = Item.objects.filter(category=category_id)
+        return items
+    except Exception as e:
+        print(f"Error retrieving items by category: {e}")
+        return []
     
