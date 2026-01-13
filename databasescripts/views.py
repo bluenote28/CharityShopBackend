@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 from ebay.tasks import update_database
+from .delete_inactive_items import deleteInactiveItems
 from django.db import close_old_connections
 from rq import Queue
 from ebay.worker import conn
@@ -23,3 +24,16 @@ class RefreshDatabaseView(APIView):
         q.enqueue(update_database, charity_id, job_timeout=7200)
 
         return Response("success")
+    
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+
+        close_old_connections()
+
+        q = Queue(connection=conn)
+
+        q.enqueue(deleteInactiveItems, job_timeout=7200)
+
+        return Response("success")
+
