@@ -13,7 +13,6 @@ def deleteInactiveItems():
     client = EbayClient("")
     count = 0
     deleted = 0
-    errors = 0
 
     try:
 
@@ -31,9 +30,7 @@ def deleteInactiveItems():
                 count += 1
             elif item_is_active == "error":
                 logger.error(f"Error retrieving item {item}")
-                count += 1
-                errors += 1
-                continue
+                break
             else:
                 deleteItemFromDatabase(item.ebay_id)
                 count += 1
@@ -41,10 +38,8 @@ def deleteInactiveItems():
 
         logger.info(f"processed {count} items.")
         logger.info(f"deleted {deleted} items")
-        logger.info(f"errors: {errors}")
 
     except Exception as e:
         logger.error(f"Error removing items from database {e}")
         logger.info(f"processed {count} items.")
         logger.info(f"deleted {deleted} items")
-        logger.info(f"errors: {errors}")
