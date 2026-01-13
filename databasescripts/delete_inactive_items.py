@@ -28,7 +28,7 @@ def deleteInactiveItems():
                 Item.save(item)
                 count += 1
             else:
-                deleteItemFromDatabase(item)
+                deleteItemFromDatabase(item.ebay_id)
                 count += 1
 
         logger.info(f"processed {count} items.")
