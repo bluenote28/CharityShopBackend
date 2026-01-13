@@ -67,6 +67,7 @@ class DatabaseLoader():
                         serializer.save()
                     else:
                         logger.error(f"Serializer validation failed: {serializer.errors}")
+                        logger.error(item['web_url'])
 
                 if 'next' in response:
                     time.sleep(90)
