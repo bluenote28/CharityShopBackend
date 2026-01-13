@@ -42,4 +42,21 @@ class EbayClient():
                 return response.json()
             except Exception as e:
                 print(f"Error fetching items from eBay API: {e}")
-                return {} 
+                return {}
+            
+        def isItemActive(self, item_id):
+               try:
+                   token = self._get_ebay_token()
+                   response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}', headers={"Authorization": f'Bearer {token}'})
+                   data = response.json()
+                   
+                   item_status = data['estimatedAvailabilities'][0]['estimatedAvailabilityStatus']
+
+                   if item_status == "IN_STOCK":
+                        return True
+                   else:
+                        return False
+
+               except Exception as e:
+                   print(f"Error fetching items from eBay API: {e}")
+                   return {}
