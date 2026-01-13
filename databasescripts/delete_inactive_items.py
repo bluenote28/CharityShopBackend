@@ -2,7 +2,7 @@ from ebay.models import Item
 import logging
 from .database_actions import deleteItemFromDatabase
 from ebay.ebay_client import EbayClient
-import datetime
+from datetime import date, timedelta
 
 logger = logging.getLogger(__name__)
 DAYS_WITHOUT_CHECKING = 7
@@ -11,26 +11,28 @@ DAYS_WITHOUT_CHECKING = 7
 def deleteInactiveItems():
 
     client = EbayClient("")
+    count = 0
 
     try:
 
-        items = Item.objects.all()
+        current_date = date.now()
 
-        current_date = datetime.date.today()
+        items = Item.objects.filter(updated_at__lte=current_date - timedelta(days=DAYS_WITHOUT_CHECKING))
 
         for item in items:
-
-            if current_date - item.updated_at <= DAYS_WITHOUT_CHECKING:
-                logger.info(f"skipping item {item}")
-                continue
 
             item_is_active = client.isItemActive(item.ebay_id)
 
             if item_is_active:
                 item.updated_at = current_date
                 Item.save(item)
+                count += 1
             else:
                 deleteItemFromDatabase(item)
+                count += 1
+
+        logger.info(f"processed {count} items.")
 
     except Exception as e:
         logger.error(f"Error removing items from database {e}")
+        logger.info(f"processed {count} items.")
