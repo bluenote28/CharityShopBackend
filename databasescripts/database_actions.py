@@ -1,5 +1,8 @@
 from ebay.models import Charity, Item
 from ebay.serializers import CharitySerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 def deleteCharity(id):
      
@@ -52,4 +55,15 @@ def getItemsByCategory(category_id):
     except Exception as e:
         print(f"Error retrieving items by category: {e}")
         return []
+    
+def deleteItemFromDatabase(item_id):
+
+    try:
+        Item.objects.delete(ebay_id=item_id)
+        logger.info(f"Deleted {item_id} from the database")
+        
+        return "Success"
+    except Exception as e:
+        print(f"Error deleting item from database: {e}")
+        return "Failure"
     
