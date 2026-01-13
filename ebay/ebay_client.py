@@ -59,4 +59,4 @@ class EbayClient():
 
                except Exception as e:
                    print(f"Error fetching items from eBay API: {e}")
-                   return {}
+                   return "error"
