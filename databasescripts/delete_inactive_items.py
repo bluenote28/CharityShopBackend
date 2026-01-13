@@ -15,7 +15,7 @@ def deleteInactiveItems():
 
     try:
 
-        current_date = datetime.now()
+        current_date = datetime.today()
 
         items = Item.objects.filter(updated_at__lte=current_date - datetime.timedelta(days=DAYS_WITHOUT_CHECKING))
 
