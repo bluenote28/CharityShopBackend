@@ -59,9 +59,10 @@ def getItemsByCategory(category_id):
 def deleteItemFromDatabase(item_id):
 
     try:
-        Item.objects.delete(ebay_id=item_id)
+        item = retrieveItem(item_id)
+        item.delete()
         logger.info(f"Deleted {item_id} from the database")
-        
+
         return "Success"
     except Exception as e:
         print(f"Error deleting item from database: {e}")
