@@ -2,7 +2,7 @@ from ebay.models import Item
 import logging
 from .database_actions import deleteItemFromDatabase
 from ebay.ebay_client import EbayClient
-from datetime import date, timedelta
+import datetime
 
 logger = logging.getLogger(__name__)
 DAYS_WITHOUT_CHECKING = 7
@@ -15,9 +15,9 @@ def deleteInactiveItems():
 
     try:
 
-        current_date = date.now()
+        current_date = datetime.now()
 
-        items = Item.objects.filter(updated_at__lte=current_date - timedelta(days=DAYS_WITHOUT_CHECKING))
+        items = Item.objects.filter(updated_at__lte=current_date - datetime.timedelta(days=DAYS_WITHOUT_CHECKING))
 
         for item in items:
 
