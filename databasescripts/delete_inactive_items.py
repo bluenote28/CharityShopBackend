@@ -14,20 +14,20 @@ def deleteInactiveItems():
 
     try:
 
-        items = Item.objects.get()
+        items = Item.objects.all()
 
         current_date = datetime.date.today()
 
         for item in items:
 
-            if current_date - item['updated_at'] <= DAYS_WITHOUT_CHECKING:
+            if current_date - item.updated_at <= DAYS_WITHOUT_CHECKING:
                 logger.info(f"skipping item {item}")
                 continue
 
-            item_is_active = client.isItemActive(item['ebay_id'])
+            item_is_active = client.isItemActive(item.ebay_id)
 
             if item_is_active:
-                item['updated_at'] = current_date
+                item.updated_at = current_date
                 Item.save(item)
             else:
                 deleteItemFromDatabase(item)
