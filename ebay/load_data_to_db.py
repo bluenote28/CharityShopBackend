@@ -46,12 +46,17 @@ class DatabaseLoader():
                             single_item = {
                                 "name": item["title"],
                                 "price": item["price"]["value"],
+                                "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
                                 "img_url": item["thumbnailImages"][0]["imageUrl"],
+                                "additional_images": item['additionalImages'],
                                 "web_url": item["itemWebUrl"],
                                 "charity": self.charity_id,
                                 "category": item["categories"][1]["categoryName"],
                                 "category_list": item["categories"],
-                                "ebay_id": item["itemId"]
+                                "ebay_id": item["itemId"],
+                                "condition": item['condition'],
+                                "item_location": item['itemLocation'],
+                                "seller": item["seller"]
                             }
 
                         except KeyError:
