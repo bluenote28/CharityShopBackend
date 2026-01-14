@@ -24,7 +24,7 @@ class Item(models.Model):
     category = models.CharField(max_length=100, null=True)
     category_list = models.JSONField(null=True)
     item_location = models.JSONField(null=True)
-    condtion = models.CharField(max_length=15)
+    condition = models.CharField(max_length=15)
     seller = models.JSONField(null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
