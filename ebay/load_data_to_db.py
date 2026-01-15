@@ -63,10 +63,7 @@ class DatabaseLoader():
                             }
 
                         except KeyError as e:
-
-                            logger.error(f"Error {e}")
-
-                            if e == "additionalImages":
+                            if str(e) == "additionalImages":
                                 single_item = {
                                 "name": item["title"],
                                 "price": item["price"]["value"],
@@ -82,7 +79,7 @@ class DatabaseLoader():
                                 "item_location": item['itemLocation'],
                                 "seller": item["seller"]
                             }
-                            elif e == "shippingCost":
+                            elif str(e) == "shippingCost":
                                  single_item = {
                                 "name": item["title"],
                                 "price": item["price"]["value"],
