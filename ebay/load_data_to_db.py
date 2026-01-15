@@ -48,7 +48,7 @@ class DatabaseLoader():
 
                         try:
 
-                            single_item = {"name": item["title"], "price": item["price"]["value"], "web_url": item["web_url"], "charity": self.charity_id,"category": item["categories"][1]["categoryName"],
+                            single_item = {"name": item["title"], "price": item["price"]["value"], "web_url": item["itemWebUrl"], "charity": self.charity_id,"category": item["categories"][1]["categoryName"],
                                 "category_list": item["categories"],"ebay_id": item["itemId"], "item_location": item['itemLocation'],"seller": item["seller"]}
 
                             for field in ITEM_FIELDS:
