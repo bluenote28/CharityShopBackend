@@ -27,8 +27,11 @@ class DatabaseLoader():
         try:
             
             response = self.client.getItems()
+
+            if "error" in response:
+                raise Exception(response['error'])
             
-            if 'itemSummaries' in response:
+            elif 'itemSummaries' in response:
            
                 data = response["itemSummaries"]   
 
