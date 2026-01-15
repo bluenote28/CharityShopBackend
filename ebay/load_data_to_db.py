@@ -67,9 +67,9 @@ class DatabaseLoader():
 
                                 elif field == 'additionalImages':
                                     try:
-                                        single_item['additionalImages'] = item['additionalImages']
+                                        single_item['additionalImages'] = {"additionalImages": item['additionalImages']}
                                     except:
-                                        single_item['additionalImages'] = []
+                                        single_item['additionalImages'] = {"additionalImages":[]}
                                 elif field == "condition":
                                     try:
                                         single_item["condition"] = item["condition"]
