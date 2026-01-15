@@ -22,7 +22,7 @@ def loadDatabase(sender, instance, **kwargs):
     charity_id = charity.id
 
     q = Queue(connection=conn)
-    q.enqueue(update_database, charity_id, job_timeout=7200)
+    q.enqueue(update_database, charity_id, job_timeout=10000)
  
 post_save.connect(loadDatabase, sender=Charity)
 
