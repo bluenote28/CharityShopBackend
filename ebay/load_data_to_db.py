@@ -5,7 +5,7 @@ import traceback
 
 logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy', 'sexy'}
-ITEM_FIELDS = ["shipping_price","img_url","additional_images", "condition"]
+ITEM_FIELDS = ["shipping_price","img_url","additionalImages", "condition"]
 
 class DatabaseLoader():
 
