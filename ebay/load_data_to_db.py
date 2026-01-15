@@ -64,6 +64,8 @@ class DatabaseLoader():
 
                         except KeyError as e:
 
+                            logger.error(f"Error {e}")
+
                             if e == "additionalImages":
                                 single_item = {
                                 "name": item["title"],
