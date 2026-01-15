@@ -5,6 +5,7 @@ import traceback
 
 logger = logging.getLogger(__name__)
 WORD_FILTER = {'playboy', 'sexy'}
+ITEM_FIELDS = ["shipping_price","img_url","additional_images", "condition"]
 
 class DatabaseLoader():
 
@@ -46,134 +47,34 @@ class DatabaseLoader():
                     else:
 
                         try:
-                            single_item = {
-                                "name": item["title"],
-                                "price": item["price"]["value"],
-                                "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
-                                "img_url": item["thumbnailImages"][0]["imageUrl"],
-                                "additional_images": item['additionalImages'],
-                                "web_url": item["itemWebUrl"],
-                                "charity": self.charity_id,
-                                "category": item["categories"][1]["categoryName"],
-                                "category_list": item["categories"],
-                                "ebay_id": item["itemId"],
-                                "condition": item['condition'],
-                                "item_location": item['itemLocation'],
-                                "seller": item["seller"]
-                            }
 
-                        except KeyError as e:
+                            single_item = {"name": item["title"], "price": item["price"]["value"], "web_url": item["web_url"], "charity": self.charity_id,"category": item["categories"][1]["categoryName"],
+                                "category_list": item["categories"],"ebay_id": item["itemId"], "item_location": item['itemLocation'],"seller": item["seller"]}
 
-                            has_condition = "condition" in item
+                            for field in ITEM_FIELDS:
 
-                            if e.args[0] == 'additionalImages':
-                                if has_condition:
-                                    single_item = {
-                                    "name": item["title"],
-                                    "price": item["price"]["value"],
-                                    "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
-                                    "img_url": item["thumbnailImages"][0]["imageUrl"],
-                                    "additional_images": [],
-                                    "web_url": item["itemWebUrl"],
-                                    "charity": self.charity_id,
-                                    "category": item["categories"][1]["categoryName"],
-                                    "category_list": item["categories"],
-                                    "ebay_id": item["itemId"],
-                                    "condition": item['condition'],
-                                    "item_location": item['itemLocation'],
-                                    "seller": item["seller"]
-                                     }
-                                    
-                                else:
-                                     single_item = {
-                                    "name": item["title"],
-                                    "price": item["price"]["value"],
-                                    "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
-                                    "img_url": item["thumbnailImages"][0]["imageUrl"],
-                                    "additional_images": [],
-                                    "web_url": item["itemWebUrl"],
-                                    "charity": self.charity_id,
-                                    "category": item["categories"][1]["categoryName"],
-                                    "category_list": item["categories"],
-                                    "ebay_id": item["itemId"],
-                                    "condition": None,
-                                    "item_location": item['itemLocation'],
-                                    "seller": item["seller"]
-                                     }
+                                if field == "shipping_price":
+                                    try:
+                                        single_item["shipping_price"] = item['shippingOptions'][0]['shippingCost']['value']
+                                    except:
+                                        single_item["shipping_price"] = None
 
-                            elif e.args[0] == 'shippingCost':
-                                 if has_condition:
-                                    single_item = {
-                                    "name": item["title"],
-                                    "price": item["price"]["value"],
-                                    "shipping_price": None,
-                                    "img_url": item["thumbnailImages"][0]["imageUrl"],
-                                    "additional_images": item['additionalImages'],
-                                    "web_url": item["itemWebUrl"],
-                                    "charity": self.charity_id,
-                                    "category": item["categories"][1]["categoryName"],
-                                    "category_list": item["categories"],
-                                    "ebay_id": item["itemId"],
-                                    "condition": item['condition'],
-                                    "item_location": item['itemLocation'],
-                                    "seller": item["seller"]
-                                    }
-                                 else:
-                                     single_item = {
-                                    "name": item["title"],
-                                    "price": item["price"]["value"],
-                                    "shipping_price": None,
-                                    "img_url": item["thumbnailImages"][0]["imageUrl"],
-                                    "additional_images": item['additionalImages'],
-                                    "web_url": item["itemWebUrl"],
-                                    "charity": self.charity_id,
-                                    "category": item["categories"][1]["categoryName"],
-                                    "category_list": item["categories"],
-                                    "ebay_id": item["itemId"],
-                                    "condition": None,
-                                    "item_location": item['itemLocation'],
-                                    "seller": item["seller"]
-                                    }
-                                     
-                            elif e.args[0] == 'thumbnailImages':
-                               if has_condition:
-                                single_item = {
-                                    "name": item["title"],
-                                    "price": item["price"]["value"],
-                                    "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
-                                    "img_url": None,
-                                    "additional_images": [],
-                                    "web_url": item["itemWebUrl"],
-                                    "charity": self.charity_id,
-                                    "category": item["categories"][1]["categoryName"],
-                                    "category_list": item["categories"],
-                                    "ebay_id": item["itemId"],
-                                    "condition": item['condition'],
-                                    "item_location": item['itemLocation'],
-                                    "seller": item["seller"]
-                                    }
-                                
-                               else:
-                                 single_item = {
-                                    "name": item["title"],
-                                    "price": item["price"]["value"],
-                                    "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
-                                    "img_url": None,
-                                    "additional_images": [],
-                                    "web_url": item["itemWebUrl"],
-                                    "charity": self.charity_id,
-                                    "category": item["categories"][1]["categoryName"],
-                                    "category_list": item["categories"],
-                                    "ebay_id": item["itemId"],
-                                    "condition": None,
-                                    "item_location": item['itemLocation'],
-                                    "seller": item["seller"]
-                                    }
+                                elif field == "img_url":
+                                    try:
+                                        single_item["img_url"] = item["thumbnailImages"][0]["imageUrl"]
+                                    except:
+                                        single_item["img_url"] = None
 
-
-                            else:
-                                logger.error(f"Key key error for item {item}: {e}")
-                                continue
+                                elif field == 'additionalImages':
+                                    try:
+                                        single_item['additionalImages'] = item['additionalImages']
+                                    except:
+                                        single_item['additionalImages'] = []
+                                elif field == "condition":
+                                    try:
+                                        single_item["condition"] = item["condition"]
+                                    except:
+                                        single_item["condition"] = None
                         
                         except Exception as e:
                             logger.error(f"Error processing item {item['itemId']}: {e}")
