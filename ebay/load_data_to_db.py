@@ -96,21 +96,42 @@ class DatabaseLoader():
                                 "seller": item["seller"]
                                  }
                             elif e.args[0] == 'thumbnailImages':
-                               single_item = {
-                                "name": item["title"],
-                                "price": item["price"]["value"],
-                                "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
-                                "img_url": None,
-                                "additional_images": None,
-                                "web_url": item["itemWebUrl"],
-                                "charity": self.charity_id,
-                                "category": item["categories"][1]["categoryName"],
-                                "category_list": item["categories"],
-                                "ebay_id": item["itemId"],
-                                "condition": item['condition'],
-                                "item_location": item['itemLocation'],
-                                "seller": item["seller"]
-                                }
+                               
+                               if 'condition' in item:
+                               
+                                single_item = {
+                                    "name": item["title"],
+                                    "price": item["price"]["value"],
+                                    "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
+                                    "img_url": None,
+                                    "additional_images": None,
+                                    "web_url": item["itemWebUrl"],
+                                    "charity": self.charity_id,
+                                    "category": item["categories"][1]["categoryName"],
+                                    "category_list": item["categories"],
+                                    "ebay_id": item["itemId"],
+                                    "condition": item['condition'],
+                                    "item_location": item['itemLocation'],
+                                    "seller": item["seller"]
+                                    }
+                                
+                               else:
+                                    item = {
+                                    "name": item["title"],
+                                    "price": item["price"]["value"],
+                                    "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
+                                    "img_url": None,
+                                    "additional_images": None,
+                                    "web_url": item["itemWebUrl"],
+                                    "charity": self.charity_id,
+                                    "category": item["categories"][1]["categoryName"],
+                                    "category_list": item["categories"],
+                                    "ebay_id": item["itemId"],
+                                    "condition": None,
+                                    "item_location": item['itemLocation'],
+                                    "seller": item["seller"]
+                                    }
+
 
                             else:
                                 logger.error(f"Key key error for item {item}: {e}")
