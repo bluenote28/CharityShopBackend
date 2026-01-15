@@ -63,6 +63,7 @@ class DatabaseLoader():
                             }
 
                         except KeyError:
+                            logger.error(f"Key key error for item {item}")
                             continue
                         
                         except Exception as e:
