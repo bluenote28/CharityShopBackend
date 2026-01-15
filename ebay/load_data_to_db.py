@@ -66,7 +66,7 @@ class DatabaseLoader():
 
                             logger.error(str(e))
 
-                            if str(e) == "additionalImages":
+                            if e.args[0] == 'additionalImages':
                                 single_item = {
                                 "name": item["title"],
                                 "price": item["price"]["value"],
@@ -82,7 +82,7 @@ class DatabaseLoader():
                                 "item_location": item['itemLocation'],
                                 "seller": item["seller"]
                             }
-                            elif e == "shippingCost":
+                            elif e.args[0] == 'shippingCost':
                                  single_item = {
                                 "name": item["title"],
                                 "price": item["price"]["value"],
