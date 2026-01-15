@@ -62,8 +62,8 @@ class DatabaseLoader():
                                 "seller": item["seller"]
                             }
 
-                        except KeyError:
-                            logger.error(f"Key key error for item {item}")
+                        except KeyError as e:
+                            logger.error(f"Key key error for item {item}: {e}")
                             continue
                         
                         except Exception as e:
