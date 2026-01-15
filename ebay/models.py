@@ -19,7 +19,7 @@ class Item(models.Model):
     additional_images = models.JSONField(null=True)
     web_url = models.URLField(max_length=450)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    shipping_price = models.DecimalField(max_digits=10, decimal_places=2)
+    shipping_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     category = models.CharField(max_length=100, null=True)
     category_list = models.JSONField(null=True)
