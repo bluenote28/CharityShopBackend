@@ -15,7 +15,7 @@ class Item(models.Model):
     id = models.AutoField(primary_key=True)
     ebay_id = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
-    img_url = models.URLField()
+    img_url = models.URLField(null=True, blank=True)
     additional_images = models.JSONField(null=True)
     web_url = models.URLField(max_length=450)
     price = models.DecimalField(max_digits=10, decimal_places=2)
