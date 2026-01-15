@@ -116,7 +116,7 @@ class DatabaseLoader():
                                     }
                                 
                                else:
-                                    item = {
+                                 single_item = {
                                     "name": item["title"],
                                     "price": item["price"]["value"],
                                     "shipping_price": item['shippingOptions'][0]['shippingCost']['value'],
