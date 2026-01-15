@@ -41,8 +41,7 @@ class EbayClient():
                 response = requests.get(f'{self.charity_url}', headers={"Authorization": f'Bearer {token}'})
                 return response.json()
             except Exception as e:
-                print(f"Error fetching items from eBay API: {e}")
-                return {}
+                return {"error": f"Error fetching items from eBay API: {e}"}
             
         def isItemActive(self, item_id):
                try:
