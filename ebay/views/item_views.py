@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from ebay.models import Item
 from ebay.serializers import ItemSerializer
-from databasescripts.database_actions import retrieveItem, getItemsByCategory
+from databasescripts.database_actions import retrieveItem, getItemsBySubCategory
 
 class EbayCharityItems(APIView):
     
@@ -22,7 +22,7 @@ class EbayCharityItems(APIView):
             return Response(serializer.data)
         
         elif category_id is not None:
-            items = getItemsByCategory(category_id)
+            items = getItemsBySubCategory(category_id)
             serializer = ItemSerializer(items, many=True)
             return Response(serializer.data)
 
