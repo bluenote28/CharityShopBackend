@@ -68,3 +68,14 @@ def deleteItemFromDatabase(item_id):
         print(f"Error deleting item from database: {e}")
         return "Failure"
     
+def getItemsBySubCategory(subcategory):
+    
+    try:
+        items = Item.objects.filter(category_list__contains=[{"categoryName": subcategory}])
+        return items
+    
+    except Exception as e:
+        print(f'Error retrieving items by sub category')
+        return "Failure"
+
+    
