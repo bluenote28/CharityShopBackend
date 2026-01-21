@@ -32,3 +32,31 @@ class EbayCharity(APIView):
             return Response(status=204)
         else:
             return Response(charity_delete, status=500)
+        
+    def put(self, request, charity_id):
+        
+        try:
+            charity = Charity.objects.get(id=charity_id)
+            charity.id = charity_id
+            charity.name = request.data['name']
+            charity.description = request.data['description']
+            charity.donation_url = request.data['donation_url']
+            charity.image_url = request.data['image_url']
+
+            charity.save()
+
+            return Response(status=204)
+
+        except Exception as e:
+            return Response(f"{e}", status=500)
+            
+
+
+
+
+
+        
+
+        
+
+
