@@ -21,7 +21,7 @@ class RefreshDatabaseView(APIView):
         close_old_connections()
 
         q = Queue(connection=conn)
-        q.enqueue(update_database, charity_id, job_timeout=10000)
+        q.enqueue(update_database, charity_id, job_timeout=10000,  result_ttl=3600, failure_ttl=86400)
 
         return Response("success")
     
