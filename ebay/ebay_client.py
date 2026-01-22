@@ -1,6 +1,6 @@
-from .oauthclient.oauth2api import oauth2api
-from .oauthclient.credentialutil import credentialutil
-from .oauthclient.model.model import environment
+from oauthclient.oauth2api import oauth2api
+from oauthclient.credentialutil import credentialutil
+from oauthclient.model.model import environment
 import os, requests, yaml
 from yaml import dump
 
@@ -59,3 +59,7 @@ class EbayClient():
                except Exception as e:
                    print(f"Error fetching items from eBay API: {e}")
                    return "error"
+               
+if __name__ =="__main__":
+      client = EbayClient("362193608")
+      print(client.getItems())
