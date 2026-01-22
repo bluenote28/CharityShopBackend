@@ -1,10 +1,7 @@
-import redis
 import os
+import redis
 
-conn = redis.Redis(
-    host='redis-14370.c244.us-east-1-2.ec2.cloud.redislabs.com',
-    port=14370,
-    decode_responses=True,
-    username="default",
-    password=os.environ.get('REDIS_PASS'),
-)
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+conn = redis.from_url(REDIS_URL, ssl_cert_reqs=None)
