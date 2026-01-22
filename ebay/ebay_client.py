@@ -41,7 +41,7 @@ class EbayClient():
             try:
                 token = self._get_ebay_token()
                 response = requests.get(f'{self.charity_url}', headers={"Authorization": f'Bearer {token}'})
-                logger.info("response from ebay in ebay client: ", response)
+                logger.info("response from ebay in ebay client: ", response.json())
                 return response.json()
             except Exception as e:
                 return {"error": f"Error fetching items from eBay API: {e}"}
