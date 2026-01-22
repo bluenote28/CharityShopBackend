@@ -89,7 +89,7 @@ class DatabaseLoader():
                         logger.error(item)
 
                 if 'next' in response:
-                    time.sleep(10)
+                    time.sleep(5)
                     self.client.charity_url = response['next']
                     self.load_items_to_db()
 
