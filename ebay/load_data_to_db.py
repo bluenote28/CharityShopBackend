@@ -4,8 +4,7 @@ import logging
 import traceback
 
 logger = logging.getLogger(__name__)
-WORD_FILTER = {'playboy', 'sexy', 'sexual', 'sex'}
-ITEM_FIELDS = ["shipping_price","img_url","additionalImages", "condition"]
+WORD_FILTER = {'playboy', 'sexy', 'sexual', 'sex'}\
 
 class DatabaseLoader():
 
@@ -50,31 +49,24 @@ class DatabaseLoader():
 
                             single_item = {"name": item["title"], "price": item["price"]["value"], "web_url": item["itemWebUrl"], "charity": self.charity_id,"category": item["categories"][1]["categoryName"],
                                 "category_list": item["categories"],"ebay_id": item["itemId"], "item_location": item['itemLocation'],"seller": item["seller"]}
+                            
+                            try:
+                                single_item["shipping_price"] = item['shippingOptions'][0]['shippingCost']['value']
+                            except:
+                                single_item["shipping_price"] = None
+                            try:
+                                single_item["img_url"] = item["thumbnailImages"][0]["imageUrl"]
+                            except:
+                                single_item["img_url"] = None
 
-                            for field in ITEM_FIELDS:
-
-                                if field == "shipping_price":
-                                    try:
-                                        single_item["shipping_price"] = item['shippingOptions'][0]['shippingCost']['value']
-                                    except:
-                                        single_item["shipping_price"] = None
-
-                                elif field == "img_url":
-                                    try:
-                                        single_item["img_url"] = item["thumbnailImages"][0]["imageUrl"]
-                                    except:
-                                        single_item["img_url"] = None
-
-                                elif field == 'additionalImages':
-                                    try:
-                                        single_item['additional_images'] = {"additionalImages": item['additionalImages']}
-                                    except:
-                                        single_item['additional_images'] = {"additionalImages":[]}
-                                elif field == "condition":
-                                    try:
-                                        single_item["condition"] = item["condition"]
-                                    except:
-                                        single_item["condition"] = None
+                            try:
+                                single_item['additional_images'] = {"additionalImages": item['additionalImages']}
+                            except:
+                                single_item['additional_images'] = {"additionalImages":[]}
+                            try:
+                                single_item["condition"] = item["condition"]
+                            except:
+                                single_item["condition"] = None
                         
                         except Exception as e:
                             logger.error(f"Error processing item {item['itemId']}: {e}")
