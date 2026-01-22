@@ -4,7 +4,7 @@ import logging
 import traceback
 
 logger = logging.getLogger(__name__)
-WORD_FILTER = {'playboy', 'sexy', 'sexual', 'sex'}\
+WORD_FILTER = {'playboy', 'sexy', 'sexual', 'sex'}
 
 class DatabaseLoader():
 
