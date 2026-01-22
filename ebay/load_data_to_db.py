@@ -28,6 +28,7 @@ class DatabaseLoader():
         try:
             logger.info("starting load database script")
             response = self.client.getItems()
+            logger.info("response: ", response)
 
             if "error" in response:
                 raise Exception(response['error'])
