@@ -26,7 +26,7 @@ class DatabaseLoader():
         from databasescripts.database_actions import itemInDatabase
 
         try:
-            
+            logger.info("starting load database script")
             response = self.client.getItems()
 
             if "error" in response:
@@ -89,6 +89,7 @@ class DatabaseLoader():
                         logger.error(item)
 
                 if 'next' in response:
+                    logger.info("sleeping for next call")
                     time.sleep(5)
                     self.client.charity_url = response['next']
                     self.load_items_to_db()
