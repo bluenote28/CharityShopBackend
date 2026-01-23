@@ -23,7 +23,7 @@ class DatabaseLoader():
     def __process_item(self, item):
 
         try:
-            if self.__contains_invalid_word(item['title']):
+            if self.__containsInvalidWord(item['title']):
                 return None
             if item.get('adultOnly', False):
                 return None
