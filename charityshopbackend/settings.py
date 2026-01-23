@@ -112,10 +112,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'charityshopbackend.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -124,14 +120,14 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASS'),
         'HOST': os.environ.get('DB_HOST'),
         'PORT': '5432',
-        'CONN_MAX_AGE': 300,
+        'CONN_MAX_AGE': 0
     }
 }
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.environ.get('HEROKU_REDIS_COPPER_URL'),
+        "LOCATION": os.environ.get('REDIS_URL'),
         "OPTIONS": {       
                 "ssl_cert_reqs": None
         }

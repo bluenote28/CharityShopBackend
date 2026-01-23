@@ -5,7 +5,7 @@ from ebay.tasks import update_database
 from .delete_inactive_items import deleteInactiveItems
 from django.db import close_old_connections
 from rq import Queue
-from ebay.worker import conn
+from ebay.worker import get_redis
 
 class RefreshDatabaseView(APIView):
 
@@ -20,7 +20,7 @@ class RefreshDatabaseView(APIView):
 
         close_old_connections()
 
-        q = Queue(connection=conn)
+        q = Queue(connection=get_redis())
         q.enqueue(update_database, charity_id, job_timeout=10000,  result_ttl=3600, failure_ttl=86400)
 
         return Response("success")
@@ -31,7 +31,7 @@ class RefreshDatabaseView(APIView):
 
         close_old_connections()
 
-        q = Queue(connection=conn)
+        q = Queue(connection=get_redis())
 
         q.enqueue(deleteInactiveItems, job_timeout=7200)
 
