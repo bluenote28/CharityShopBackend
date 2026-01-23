@@ -33,58 +33,65 @@ class DatabaseLoader():
             
             elif 'itemSummaries' in response:
            
-                data = response["itemSummaries"]   
+                next_page = True
 
-                for item in data:
+                while next_page:
 
-                    if self.__containsInvalidWord(item['title']):
-                        continue
-                    elif item['adultOnly'] == True:
-                        continue
-                    elif itemInDatabase(item['itemId']) == True:
-                        continue
-                    else:
+                    data = response["itemSummaries"]
 
-                        try:
+                    for item in data:
 
-                            single_item = {"name": item["title"], "price": item["price"]["value"], "web_url": item["itemWebUrl"], "charity": self.charity_id,"category": item["categories"][1]["categoryName"],
-                                "category_list": item["categories"],"ebay_id": item["itemId"], "item_location": item['itemLocation'],"seller": item["seller"]}
-                            
-                            try:
-                                single_item["shipping_price"] = item['shippingOptions'][0]['shippingCost']['value']
-                            except:
-                                single_item["shipping_price"] = None
-                            try:
-                                single_item["img_url"] = item["thumbnailImages"][0]["imageUrl"]
-                            except:
-                                single_item["img_url"] = None
-
-                            try:
-                                single_item['additional_images'] = {"additionalImages": item['additionalImages']}
-                            except:
-                                single_item['additional_images'] = {"additionalImages":[]}
-                            try:
-                                single_item["condition"] = item["condition"]
-                            except:
-                                single_item["condition"] = None
-                        
-                        except Exception as e:
-                            logger.error(f"Error processing item {item['itemId']}: {e}")
+                        if self.__containsInvalidWord(item['title']):
                             continue
-                    
-                    serializer = ItemSerializer(data=single_item)
+                        elif item['adultOnly'] == True:
+                            continue
+                        elif itemInDatabase(item['itemId']) == True:
+                            continue
+                        else:
 
-                    if serializer.is_valid():
-                        serializer.save()
-                    else:
-                        logger.error(f"Serializer validation failed: {serializer.errors}")
-                        logger.error(item)
+                            try:
 
-                if 'next' in response:
-                    logger.info("sleeping for next call")
-                    time.sleep(5)
-                    self.client.charity_url = response['next']
-                    self.load_items_to_db()
+                                single_item = {"name": item["title"], "price": item["price"]["value"], "web_url": item["itemWebUrl"], "charity": self.charity_id,"category": item["categories"][1]["categoryName"],
+                                    "category_list": item["categories"],"ebay_id": item["itemId"], "item_location": item['itemLocation'],"seller": item["seller"]}
+                                
+                                try:
+                                    single_item["shipping_price"] = item['shippingOptions'][0]['shippingCost']['value']
+                                except:
+                                    single_item["shipping_price"] = None
+                                try:
+                                    single_item["img_url"] = item["thumbnailImages"][0]["imageUrl"]
+                                except:
+                                    single_item["img_url"] = None
+
+                                try:
+                                    single_item['additional_images'] = {"additionalImages": item['additionalImages']}
+                                except:
+                                    single_item['additional_images'] = {"additionalImages":[]}
+                                try:
+                                    single_item["condition"] = item["condition"]
+                                except:
+                                    single_item["condition"] = None
+
+                            
+                            except Exception as e:
+                                logger.error(f"Error processing item {item['itemId']}: {e}")
+                                continue
+                        
+                        serializer = ItemSerializer(data=single_item)
+                        
+                        if serializer.is_valid():
+                            serializer.save()
+                        else:
+                            logger.error(f"Serializer validation failed: {serializer.errors}")
+                            logger.error(item)
+
+                        if 'next' in response:
+                            logger.info("sleeping for next call")
+                            time.sleep(5)
+                            self.client.charity_url = response['next']
+                            response = self.client.getItems()
+                        else:
+                            next_page = False
 
             return "Success"
              
