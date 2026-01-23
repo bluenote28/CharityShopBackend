@@ -93,7 +93,7 @@ class DatabaseLoader():
                         else:
                             next_page = False
 
-            return "Success"
+            return "success"
              
         except Exception as e:
             logger.error(f"Error loading items to database: {e}")
