@@ -16,9 +16,6 @@ SECURE_HSTS_PRELOAD = True
 
 ALLOWED_HOSTS = ['thecharityshop-9c7b08c3213c.herokuapp.com']
 
-
-# Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,7 +34,9 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+        'PAGE_SIZE': 100
 }
 
 
@@ -185,7 +184,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
      "https://main.d3ky9hapmr6avy.amplifyapp.com",
-     "https://www.charityshopusa.com"   
+     "https://www.charityshopusa.com"
 ]
 
 LOGGING = {
