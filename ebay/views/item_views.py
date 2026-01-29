@@ -24,7 +24,7 @@ class EbayCharityItems(APIView):
             items = Item.objects.filter(name__icontains=search_text)
             paginated_items = self.paginator.paginate_queryset(items, request, self)
             serializer = ItemSerializer(items, many=True)
-            self.paginator.get_paginated_response(serializer.data)
+            return self.paginator.get_paginated_response(serializer.data)
         
         elif category_id is not None:
             items = getItemsBySubCategory(category_id)
