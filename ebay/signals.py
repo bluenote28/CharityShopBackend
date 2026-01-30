@@ -16,7 +16,10 @@ def updateUser(sender, instance, **kwargs):
 pre_save.connect(updateUser, sender=User)
 
 def loadDatabase(sender, instance, **kwargs):
-    
+
+    if settings.TESTING:
+        return
+           
     print("Loading Database Signal Triggered")
     charity = instance
     charity_id = charity.id
