@@ -5,7 +5,7 @@ from ebay.ebay_client import EbayClient
 import datetime
 
 logger = logging.getLogger(__name__)
-DAYS_WITHOUT_CHECKING = 7
+DAYS_WITHOUT_CHECKING = 14
 
 
 def deleteInactiveItems():
@@ -18,7 +18,7 @@ def deleteInactiveItems():
 
         current_date = datetime.date.today()
 
-        items = Item.objects.filter(updated_at__lte=current_date - datetime.timedelta(days=DAYS_WITHOUT_CHECKING))
+        items = Item.objects.filter(updated_at__lte=current_date - datetime.timedelta(days=DAYS_WITHOUT_CHECKING))[:5000]
 
         for item in items:
 
