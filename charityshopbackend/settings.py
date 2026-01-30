@@ -1,8 +1,10 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+import sys
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+TESTING = 'test' in sys.argv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
