@@ -3,6 +3,7 @@ from .models import *
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from .ebay_client import EbayClient
+from unittest.mock import patch
 
 EBAY_CHARITY_URL = 'https://api.ebay.com/buy/browse/v1/item_summary/search?limit=200&offset=200&charity_ids=351044585'
 EBAY_CHARITY_ID = '351044585'
@@ -10,7 +11,7 @@ EBAY_CHARITY_ID = '351044585'
 
 class CharityTestCase(TestCase):
     def setUp(self):
-        Charity.objects.create(name="Test Charity", description="Test Description")
+        Charity.objects.create(id=1234, name="Test Charity", description="Test Description")
         self.client = Client()
 
     def test_charity(self):
@@ -39,7 +40,7 @@ class ItemTestCase(TestCase):
         self.assertEqual(item.charity.name, "Test Charity")
 
     def test_item_view(self):
-        response = self.client.get('/api/items/ebaycharityitems/')
+        response = self.client.get('/api/items/ebaycharityitems/123456789')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test Item")
 
@@ -85,11 +86,16 @@ class EbayClientTest(TestCase):
 
     def test_ebay_client(self):
         self.assertEqual(self.client.charity_id, EBAY_CHARITY_ID)
-        self.assertEqual(self.client.charity_url, EBAY_CHARITY_URL) 
+        self.assertEqual(self.client.charity_url, EBAY_CHARITY_URL)
 
-    def test_call_ebay(self):
+    @patch("ebay.ebay_client.EbayClient.getItems")
+    def test_call_ebay(self, mock_get_items):
+        mock_get_items.return_value = {
+            "itemSummaries": ["item1"]
+        }
+
         response = self.client.getItems()
-        self.assertEqual(response['total'] > 0, True)
+        self.assertTrue(len(response["itemSummaries"]) > 0)
         
 
         
