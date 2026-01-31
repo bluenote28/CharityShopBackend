@@ -378,3 +378,255 @@ class TestSaveItemsBatch(unittest.TestCase):
         
         mock_transaction.atomic.assert_called_once()
 
+class TestLoadItemsToDb(unittest.TestCase):
+
+    @patch('ebay.load_data_to_db.EbayClient')
+    def setUp(self, mock_client_class):
+        
+        self.mock_client = Mock()
+        mock_client_class.return_value = self.mock_client
+        self.loader = DatabaseLoader("test_charity_123")
+
+    @patch('ebay.load_data_to_db.connection')
+    def test_returns_success_no_items_when_no_item_summaries(self, mock_connection):
+        self.mock_client.getItems.return_value = {"total": 0}
+        result = self.loader.load_items_to_db()
+        self.assertEqual(result, "success - no items")
+
+    @patch('ebay.load_data_to_db.connection')
+    def test_returns_error_message_on_api_error(self, mock_connection):
+        self.mock_client.getItems.return_value = {"error": "API rate limit exceeded"}
+        result = self.loader.load_items_to_db()
+        self.assertEqual(result, "API rate limit exceeded")
+
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__save_items_batch')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__get_existing_ebay_ids')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__process_item')
+    def test_processes_single_page_successfully(
+        self, mock_process, mock_get_existing, mock_save, mock_connection
+    ):
+        self.mock_client.getItems.return_value = {
+            "itemSummaries": [
+                {"itemId": "id1", "title": "Item 1"},
+                {"itemId": "id2", "title": "Item 2"}
+            ]
+        }
+        mock_get_existing.return_value = set()
+        mock_process.side_effect = [
+            {"ebay_id": "id1", "name": "Item 1"},
+            {"ebay_id": "id2", "name": "Item 2"}
+        ]
+        mock_save.return_value = 2
+        
+        result = self.loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        self.assertEqual(self.loader.items_processed, 2)
+        self.assertEqual(self.loader.items_saved, 2)
+        self.assertEqual(self.loader.items_skipped, 0)
+
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__save_items_batch')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__get_existing_ebay_ids')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__process_item')
+    def test_skips_existing_items(
+        self, mock_process, mock_get_existing, mock_save, mock_connection
+    ):
+        self.mock_client.getItems.return_value = {
+            "itemSummaries": [
+                {"itemId": "id1", "title": "Item 1"},
+                {"itemId": "id2", "title": "Item 2"}
+            ]
+        }
+        mock_get_existing.return_value = {"id1"}
+        mock_process.return_value = {"ebay_id": "id2", "name": "Item 2"}
+        mock_save.return_value = 1
+        
+        result = self.loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        self.assertEqual(self.loader.items_processed, 2)
+        self.assertEqual(self.loader.items_skipped, 1)
+        mock_process.assert_called_once()
+
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__save_items_batch')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__get_existing_ebay_ids')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__process_item')
+    def test_skips_items_that_fail_processing(
+        self, mock_process, mock_get_existing, mock_save, mock_connection
+    ):
+      
+        self.mock_client.getItems.return_value = {
+            "itemSummaries": [
+                {"itemId": "id1", "title": "Playboy Magazine"},
+                {"itemId": "id2", "title": "Valid Item"}
+            ]
+        }
+        mock_get_existing.return_value = set()
+        mock_process.side_effect = [None, {"ebay_id": "id2"}]
+        mock_save.return_value = 1
+        
+        result = self.loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        self.assertEqual(self.loader.items_skipped, 1)
+
+    @patch('ebay.load_data_to_db.time.sleep')
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__save_items_batch')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__get_existing_ebay_ids')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__process_item')
+    def test_handles_pagination(
+        self, mock_process, mock_get_existing, mock_save,
+        mock_connection, mock_sleep
+    ):
+        self.mock_client.getItems.side_effect = [
+            {
+                "itemSummaries": [{"itemId": "id1", "title": "Item 1"}],
+                "next": "https://api.ebay.com/next_page"
+            },
+            {
+                "itemSummaries": [{"itemId": "id2", "title": "Item 2"}]
+            }
+        ]
+        mock_get_existing.return_value = set()
+        mock_process.side_effect = [{"ebay_id": "id1"}, {"ebay_id": "id2"}]
+        mock_save.return_value = 1
+        
+        result = self.loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        self.assertEqual(self.loader.items_processed, 2)
+        self.assertEqual(self.mock_client.getItems.call_count, 2)
+        mock_sleep.assert_called_once_with(5)
+        self.assertEqual(self.mock_client.charity_url, "https://api.ebay.com/next_page")
+
+    @patch('ebay.load_data_to_db.connection')
+    def test_closes_connection_on_exception(self, mock_connection):
+        self.mock_client.getItems.side_effect = Exception("Network error")
+        result = self.loader.load_items_to_db()
+        self.assertIn("Network error", result)
+        mock_connection.close.assert_called()
+
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__get_existing_ebay_ids')
+    def test_handles_empty_page_gracefully(self, mock_get_existing, mock_connection):
+        self.mock_client.getItems.return_value = {"itemSummaries": []}
+        result = self.loader.load_items_to_db()
+        self.assertEqual(result, "success")
+
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__save_items_batch')
+    @patch('ebay.load_data_to_db.DatabaseLoader._DatabaseLoader__get_existing_ebay_ids')
+    def test_does_not_save_when_no_items_to_save(
+        self, mock_get_existing, mock_save, mock_connection
+    ):
+        self.mock_client.getItems.return_value = {
+            "itemSummaries": [{"itemId": "id1", "title": "Item 1"}]
+        }
+        mock_get_existing.return_value = {"id1"}
+        
+        result = self.loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        mock_save.assert_not_called()
+
+    @patch('ebay.load_data_to_db.connection')
+    def test_closes_connection_in_finally_block(self, mock_connection):
+        self.mock_client.getItems.return_value = {"total": 0}
+        self.loader.load_items_to_db()
+        mock_connection.close.assert_called()
+
+
+class TestIntegration(unittest.TestCase):
+
+    def _create_sample_item(self, item_id="item123", title="Vintage Book"):
+        return {
+            "itemId": item_id,
+            "title": title,
+            "price": {"value": "29.99"},
+            "itemWebUrl": f"https://ebay.com/{item_id}",
+            "categories": [
+                {"categoryId": "1", "categoryName": "Books"},
+                {"categoryId": "2", "categoryName": "Collectibles"}
+            ],
+            "itemLocation": {"city": "New York", "country": "US"},
+            "seller": {"username": "seller123"},
+            "condition": "Used",
+            "shippingOptions": [{"shippingCost": {"value": "5.99"}}],
+            "thumbnailImages": [{"imageUrl": "https://example.com/image.jpg"}]
+        }
+
+    @patch('ebay.load_data_to_db.time.sleep')
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.transaction')
+    @patch('ebay.serializers.ItemSerializer')
+    @patch('ebay.models.Item')
+    @patch('ebay.load_data_to_db.EbayClient')
+    def test_full_flow_single_page(
+        self, mock_client_class, mock_item_model, mock_serializer_class,
+        mock_transaction, mock_connection, mock_sleep
+    ):
+        
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_client.getItems.return_value = {
+            "itemSummaries": [self._create_sample_item()]
+        }
+        
+        mock_queryset = Mock()
+        mock_queryset.values_list.return_value = []
+        mock_item_model.objects.filter.return_value = mock_queryset
+        
+        mock_serializer = Mock()
+        mock_serializer.is_valid.return_value = True
+        mock_serializer_class.return_value = mock_serializer
+        
+        loader = DatabaseLoader("test_charity")
+        result = loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        self.assertEqual(loader.items_processed, 1)
+        self.assertEqual(loader.items_saved, 1)
+        mock_serializer.save.assert_called_once()
+
+    @patch('ebay.load_data_to_db.time.sleep')
+    @patch('ebay.load_data_to_db.connection')
+    @patch('ebay.load_data_to_db.transaction')
+    @patch('ebay.serializers.ItemSerializer')
+    @patch('ebay.models.Item')
+    @patch('ebay.load_data_to_db.EbayClient')
+    def test_filters_adult_and_invalid_content(
+        self, mock_client_class, mock_item_model, mock_serializer_class,
+        mock_transaction, mock_connection, mock_sleep
+    ):
+        
+        adult_item = self._create_sample_item("adult1", "Normal Title")
+        adult_item["adultOnly"] = True
+        
+        invalid_item = self._create_sample_item("invalid1", "Sexy Magazine")
+        valid_item = self._create_sample_item("valid1", "Valid Book")
+        
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_client.getItems.return_value = {
+            "itemSummaries": [adult_item, invalid_item, valid_item]
+        }
+        
+        mock_queryset = Mock()
+        mock_queryset.values_list.return_value = []
+        mock_item_model.objects.filter.return_value = mock_queryset
+        
+        mock_serializer = Mock()
+        mock_serializer.is_valid.return_value = True
+        mock_serializer_class.return_value = mock_serializer
+        
+        loader = DatabaseLoader("test_charity")
+        result = loader.load_items_to_db()
+        
+        self.assertEqual(result, "success")
+        self.assertEqual(loader.items_processed, 3)
+        self.assertEqual(loader.items_skipped, 2)
+        self.assertEqual(mock_serializer.save.call_count, 1)
