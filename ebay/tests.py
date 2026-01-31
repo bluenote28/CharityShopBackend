@@ -314,3 +314,67 @@ class TestGetExistingEbayIds(unittest.TestCase):
             self.method(test_ids)
         
         mock_item_model.objects.filter.assert_called_once_with(ebay_id__in=test_ids)
+
+class TestSaveItemsBatch(unittest.TestCase):
+
+    @patch('ebay.load_data_to_db.EbayClient')
+    def setUp(self, mock_client):    
+        self.loader = DatabaseLoader("test_charity_123")
+        self.method = self.loader._DatabaseLoader__save_items_batch
+
+    @patch('ebay.load_data_to_db.transaction')
+    @patch('ebay.serializers.ItemSerializer')
+    def test_saves_valid_items(self, mock_serializer_class, mock_transaction):
+        mock_serializer = Mock()
+        mock_serializer.is_valid.return_value = True
+        mock_serializer_class.return_value = mock_serializer
+        
+        items = [
+            {"ebay_id": "id1", "name": "Item 1"},
+            {"ebay_id": "id2", "name": "Item 2"}
+        ]
+        
+        result = self.method(items)
+        
+        self.assertEqual(result, 2)
+        self.assertEqual(mock_serializer.save.call_count, 2)
+
+    @patch('ebay.load_data_to_db.transaction')
+    @patch('ebay.serializers.ItemSerializer')
+    def test_skips_invalid_items(self, mock_serializer_class, mock_transaction):
+        """Should skip items that fail validation"""
+        mock_serializer = Mock()
+        mock_serializer.is_valid.side_effect = [True, False, True]
+        mock_serializer.errors = {"name": ["Required field"]}
+        mock_serializer_class.return_value = mock_serializer
+        
+        items = [
+            {"ebay_id": "id1"},
+            {"ebay_id": "id2"},
+            {"ebay_id": "id3"}
+        ]
+        
+        result = self.method(items)
+        
+        self.assertEqual(result, 2)
+        self.assertEqual(mock_serializer.save.call_count, 2)
+
+    @patch('ebay.load_data_to_db.transaction')
+    @patch('ebay.serializers.ItemSerializer')
+    def test_returns_zero_for_empty_list(self, mock_serializer_class, mock_transaction):
+        result = self.method([])
+        
+        self.assertEqual(result, 0)
+        mock_serializer_class.assert_not_called()
+
+    @patch('ebay.load_data_to_db.transaction')
+    @patch('ebay.serializers.ItemSerializer')
+    def test_uses_atomic_transaction(self, mock_serializer_class, mock_transaction):
+        mock_serializer = Mock()
+        mock_serializer.is_valid.return_value = True
+        mock_serializer_class.return_value = mock_serializer
+        
+        self.method([{"ebay_id": "id1"}])
+        
+        mock_transaction.atomic.assert_called_once()
+
