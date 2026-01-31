@@ -130,3 +130,40 @@ class TestWordFilter(unittest.TestCase):
     def test_word_filter_is_set(self):
         
         self.assertIsInstance(WORD_FILTER, set)
+
+class TestContainsInvalidWord(unittest.TestCase):
+
+    @patch('ebay.load_data_to_db.EbayClient')
+    def setUp(self, mock_client):
+        
+        self.loader = DatabaseLoader("test_charity_123")
+        self.method = self.loader._DatabaseLoader__containsInvalidWord
+
+    def test_returns_true_for_invalid_word_playboy(self):
+        self.assertTrue(self.method("Playboy Magazine"))
+
+    def test_returns_true_for_invalid_word_sexy(self):
+        self.assertTrue(self.method("SEXY dress"))
+
+    def test_returns_true_for_invalid_word_sexual(self):
+        self.assertTrue(self.method("sexual content"))
+
+    def test_returns_true_for_invalid_word_sex(self):
+        self.assertTrue(self.method("sex education book"))
+
+    def test_returns_false_for_valid_title(self):
+        self.assertFalse(self.method("Vintage Book Collection"))
+        self.assertFalse(self.method("Beautiful Dress"))
+        self.assertFalse(self.method("Educational Material"))
+
+    def test_case_insensitive_uppercase(self):
+        self.assertTrue(self.method("PLAYBOY"))
+
+    def test_case_insensitive_mixed(self):
+        self.assertTrue(self.method("PlayBoy"))
+
+    def test_case_insensitive_lowercase(self):
+        self.assertTrue(self.method("playboy"))
+
+    def test_partial_word_match(self):
+        self.assertTrue(self.method("sexiest item"))
