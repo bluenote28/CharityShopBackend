@@ -3,7 +3,9 @@ from .models import *
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from .ebay_client import EbayClient
-from unittest.mock import patch
+from unittest.mock import patch, Mock, MagicMock
+from .load_data_to_db import DatabaseLoader, WORD_FILTER
+import unittest
 
 EBAY_CHARITY_URL = 'https://api.ebay.com/buy/browse/v1/item_summary/search?limit=200&offset=200&charity_ids=351044585'
 EBAY_CHARITY_ID = '351044585'
@@ -97,5 +99,34 @@ class EbayClientTest(TestCase):
         response = self.client.getItems()
         self.assertTrue(len(response["itemSummaries"]) > 0)
         
+class TestDatabaseLoaderInit(unittest.TestCase):
 
+    @patch('ebay.load_data_to_db.EbayClient')
+    def test_initializes_with_charity_id(self, mock_client):
         
+        loader = DatabaseLoader("charity_456")
+        
+        self.assertEqual(loader.charity_id, "charity_456")
+        mock_client.assert_called_once_with("charity_456")
+
+    @patch('ebay.load_data_to_db.EbayClient')
+    def test_initializes_counters_to_zero(self, mock_client):
+        
+        loader = DatabaseLoader("charity_456")
+        
+        self.assertEqual(loader.items_processed, 0)
+        self.assertEqual(loader.items_saved, 0)
+        self.assertEqual(loader.items_skipped, 0)
+
+
+class TestWordFilter(unittest.TestCase):
+ 
+    def test_word_filter_contains_expected_words(self):    
+        self.assertIn('playboy', WORD_FILTER)
+        self.assertIn('sexy', WORD_FILTER)
+        self.assertIn('sexual', WORD_FILTER)
+        self.assertIn('sex', WORD_FILTER)
+
+    def test_word_filter_is_set(self):
+        
+        self.assertIsInstance(WORD_FILTER, set)
