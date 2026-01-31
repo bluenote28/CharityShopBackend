@@ -167,3 +167,106 @@ class TestContainsInvalidWord(unittest.TestCase):
 
     def test_partial_word_match(self):
         self.assertTrue(self.method("sexiest item"))
+
+class TestProcessItem(unittest.TestCase):
+
+    @patch('ebay.load_data_to_db.EbayClient')
+    def setUp(self, mock_client):
+        
+        self.loader = DatabaseLoader("test_charity_123")
+        self.method = self.loader._DatabaseLoader__process_item
+        self.sample_item = self._create_sample_item()
+
+    def _create_sample_item(self):
+        return {
+            "itemId": "item123",
+            "title": "Vintage Book Collection",
+            "price": {"value": "29.99"},
+            "itemWebUrl": "https://ebay.com/item123",
+            "categories": [
+                {"categoryId": "1", "categoryName": "Books"},
+                {"categoryId": "2", "categoryName": "Collectibles"}
+            ],
+            "itemLocation": {"city": "New York", "country": "US"},
+            "seller": {"username": "seller123"},
+            "condition": "Used",
+            "shippingOptions": [
+                {"shippingCost": {"value": "5.99"}}
+            ],
+            "thumbnailImages": [
+                {"imageUrl": "https://example.com/image.jpg"}
+            ],
+            "additionalImages": [
+                {"imageUrl": "https://example.com/image2.jpg"}
+            ]
+        }
+
+    def test_processes_valid_item_correctly(self):
+        result = self.method(self.sample_item)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result["name"], "Vintage Book Collection")
+        self.assertEqual(result["price"], "29.99")
+        self.assertEqual(result["web_url"], "https://ebay.com/item123")
+        self.assertEqual(result["charity"], "test_charity_123")
+        self.assertEqual(result["category"], "Collectibles")
+        self.assertEqual(result["ebay_id"], "item123")
+        self.assertEqual(result["shipping_price"], "5.99")
+        self.assertEqual(result["img_url"], "https://example.com/image.jpg")
+        self.assertEqual(result["condition"], "Used")
+
+    def test_returns_none_for_invalid_title(self):
+        self.sample_item["title"] = "Playboy Magazine Collection"
+        result = self.method(self.sample_item)  
+        self.assertIsNone(result)
+
+    def test_returns_none_for_adult_only(self):
+        self.sample_item["adultOnly"] = True
+        result = self.method(self.sample_item)
+        self.assertIsNone(result)
+
+    def test_handles_missing_shipping_options(self):
+        del self.sample_item["shippingOptions"]
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+        self.assertIsNone(result["shipping_price"])
+
+    def test_handles_empty_shipping_options(self):
+        self.sample_item["shippingOptions"] = []
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+        self.assertIsNone(result["shipping_price"])
+
+    def test_handles_missing_thumbnail_images(self):
+        del self.sample_item["thumbnailImages"]
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+        self.assertIsNone(result["img_url"])
+
+    def test_handles_missing_additional_images(self):
+        del self.sample_item["additionalImages"]
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["additional_images"], {"additionalImages": []})
+
+    def test_handles_exception_gracefully(self):
+        invalid_item = {"itemId": "bad_item"}
+        result = self.method(invalid_item)     
+        self.assertIsNone(result)
+
+    def test_adult_only_defaults_to_false(self):
+        self.assertNotIn("adultOnly", self.sample_item)
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+
+    def test_includes_category_list(self):
+        result = self.method(self.sample_item)
+        self.assertEqual(len(result["category_list"]), 2)
+
+    def test_includes_seller_info(self):
+        result = self.method(self.sample_item)
+        self.assertEqual(result["seller"], {"username": "seller123"})
+
+    def test_includes_item_location(self):
+        result = self.method(self.sample_item)   
+        self.assertEqual(result["item_location"], {"city": "New York", "country": "US"})
