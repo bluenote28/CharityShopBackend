@@ -270,3 +270,47 @@ class TestProcessItem(unittest.TestCase):
     def test_includes_item_location(self):
         result = self.method(self.sample_item)   
         self.assertEqual(result["item_location"], {"city": "New York", "country": "US"})
+
+class TestGetExistingEbayIds(unittest.TestCase):
+
+    @patch('ebay.load_data_to_db.EbayClient')
+    def setUp(self, mock_client):
+        
+        self.loader = DatabaseLoader("test_charity_123")
+        self.method = self.loader._DatabaseLoader__get_existing_ebay_ids
+
+    @patch('ebay.models.Item')
+    def test_returns_set_of_existing_ids(self, mock_item_model):
+        mock_queryset = Mock()
+        mock_queryset.values_list.return_value = ["id1", "id2"]
+        mock_item_model.objects.filter.return_value = mock_queryset
+        
+        with patch('ebay.models.Item', mock_item_model):
+            result = self.method(["id1", "id2", "id3"])
+        
+        self.assertIsInstance(result, set)
+        self.assertEqual(result, {"id1", "id2"})
+
+    @patch('ebay.models.Item')
+    def test_returns_empty_set_when_no_existing(self, mock_item_model):
+        mock_queryset = Mock()
+        mock_queryset.values_list.return_value = []
+        mock_item_model.objects.filter.return_value = mock_queryset
+        
+        with patch('ebay.models.Item', mock_item_model):
+            result = self.method(["id1", "id2"])
+        
+        self.assertEqual(result, set())
+
+    @patch('ebay.models.Item')
+    def test_calls_filter_with_correct_ids(self, mock_item_model):
+        mock_queryset = Mock()
+        mock_queryset.values_list.return_value = []
+        mock_item_model.objects.filter.return_value = mock_queryset
+        
+        test_ids = ["id1", "id2", "id3"]
+        
+        with patch('ebay.models.Item', mock_item_model):
+            self.method(test_ids)
+        
+        mock_item_model.objects.filter.assert_called_once_with(ebay_id__in=test_ids)
