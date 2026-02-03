@@ -22,19 +22,22 @@ def deleteInactiveItems():
 
         for item in items:
 
-            item_is_active = client.isItemActive(item.ebay_id)
+            try:
+                item_is_active = client.isItemActive(item.ebay_id)
 
-            if item_is_active == True:
-                item.updated_at = current_date
-                Item.save(item)
-                count += 1
-            elif item_is_active == "error":
-                logger.error(f"Error retrieving item {item}")
-                break
-            else:
-                deleteItemFromDatabase(item.ebay_id)
-                count += 1
-                deleted += 1
+                if item_is_active == True:
+                    item.updated_at = current_date
+                    Item.save(item)
+                    count += 1
+                elif item_is_active == "error":
+                    logger.error(f"Error retrieving item {item}")
+                    break
+                else:
+                    deleteItemFromDatabase(item.ebay_id)
+                    count += 1
+                    deleted += 1
+            except:
+                continue
 
         logger.info(f"processed {count} items.")
         logger.info(f"deleted {deleted} items")
