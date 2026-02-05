@@ -1,10 +1,11 @@
 import unittest
-from unittest.mock import Mock, patch, MagicMock
-from django.test import TestCase, RequestFactory
-from rest_framework.test import APIRequestFactory, APITestCase
+from unittest.mock import Mock, patch
+from django.test import TestCase
+from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework import status
 from ..views.charity_views import EbayCharity
-from ebay.models import Charity
+from ebay.views.report_view import EbayReportView
+from django.contrib.auth.models import User as DjangoUser
 
 class TestEbayCharityGet(unittest.TestCase):
 
@@ -356,3 +357,504 @@ class TestEbayCharityIntegration(TestCase):
         request = self.factory.delete('/api/charity/1/')
         response = self.view(request, charity_id=1)
         self.assertEqual(response.status_code, 204)
+
+
+############################# Report View Tests ##################################
+
+class TestEbayReportViewGet(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = EbayReportView.as_view()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+        
+        self.mock_regular_user = Mock(spec=DjangoUser)
+        self.mock_regular_user.id = 2
+        self.mock_regular_user.username = "regular"
+        self.mock_regular_user.is_staff = False
+        self.mock_regular_user.is_authenticated = True
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_returns_report_data(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 10
+        mock_charity_model.objects.count.return_value = 2
+        
+        mock_charity_1 = Mock()
+        mock_charity_1.name = "Charity One"
+        mock_charity_2 = Mock()
+        mock_charity_2.name = "Charity Two"
+        
+        mock_charity_model.objects.all.return_value = [mock_charity_1, mock_charity_2]
+        
+        mock_item_model.objects.filter.return_value.count.side_effect = [5, 5]
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_items'], 10)
+        self.assertEqual(response.data['total_charities'], 2)
+        self.assertEqual(len(response.data['items_per_charity']), 2)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_returns_correct_items_per_charity(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 15
+        mock_charity_model.objects.count.return_value = 3
+        
+        mock_charity_1 = Mock()
+        mock_charity_1.name = "Charity A"
+        mock_charity_2 = Mock()
+        mock_charity_2.name = "Charity B"
+        mock_charity_3 = Mock()
+        mock_charity_3.name = "Charity C"
+        
+        mock_charity_model.objects.all.return_value = [
+            mock_charity_1, 
+            mock_charity_2, 
+            mock_charity_3
+        ]
+        
+        mock_item_model.objects.filter.return_value.count.side_effect = [10, 3, 2]
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        items_per_charity = response.data['items_per_charity']
+        self.assertEqual(items_per_charity[0]['name'], "Charity A")
+        self.assertEqual(items_per_charity[0]['item_count'], 10)
+        self.assertEqual(items_per_charity[1]['name'], "Charity B")
+        self.assertEqual(items_per_charity[1]['item_count'], 3)
+        self.assertEqual(items_per_charity[2]['name'], "Charity C")
+        self.assertEqual(items_per_charity[2]['item_count'], 2)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_returns_empty_data_when_no_items_or_charities(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 0
+        mock_charity_model.objects.count.return_value = 0
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_items'], 0)
+        self.assertEqual(response.data['total_charities'], 0)
+        self.assertEqual(response.data['items_per_charity'], [])
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_returns_charity_with_zero_items(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 0
+        mock_charity_model.objects.count.return_value = 1
+        
+        mock_charity = Mock()
+        mock_charity.name = "Empty Charity"
+        mock_charity_model.objects.all.return_value = [mock_charity]
+        
+        mock_item_model.objects.filter.return_value.count.return_value = 0
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['items_per_charity'][0]['name'], "Empty Charity")
+        self.assertEqual(response.data['items_per_charity'][0]['item_count'], 0)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_calls_item_count(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        self.view(request)
+        
+        mock_item_model.objects.count.assert_called_once()
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_calls_charity_count(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        self.view(request)
+        
+        mock_charity_model.objects.count.assert_called_once()
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_calls_charity_all(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        self.view(request)
+        
+        mock_charity_model.objects.all.assert_called_once()
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_filters_items_by_charity(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 10
+        mock_charity_model.objects.count.return_value = 2
+        
+        mock_charity_1 = Mock()
+        mock_charity_1.name = "Charity One"
+        mock_charity_2 = Mock()
+        mock_charity_2.name = "Charity Two"
+        
+        mock_charity_model.objects.all.return_value = [mock_charity_1, mock_charity_2]
+        mock_item_model.objects.filter.return_value.count.return_value = 5
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        self.view(request)
+        
+        # Verify filter was called for each charity
+        self.assertEqual(mock_item_model.objects.filter.call_count, 2)
+        mock_item_model.objects.filter.assert_any_call(charity=mock_charity_1)
+        mock_item_model.objects.filter.assert_any_call(charity=mock_charity_2)
+
+
+class TestEbayReportViewPermissions(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = EbayReportView.as_view()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+        
+        self.mock_regular_user = Mock(spec=DjangoUser)
+        self.mock_regular_user.id = 2
+        self.mock_regular_user.username = "regular"
+        self.mock_regular_user.is_staff = False
+        self.mock_regular_user.is_authenticated = True
+
+    def test_permission_denied_for_unauthenticated_user(self):
+        request = self.factory.get('/api/report/')
+        
+        response = self.view(request)
+        
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+    def test_permission_denied_for_non_admin_user(self):
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_regular_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_permission_granted_for_admin_user(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 0
+        mock_charity_model.objects.count.return_value = 0
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class TestEbayReportViewEdgeCases(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = EbayReportView.as_view()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_with_large_number_of_charities(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 1000
+        mock_charity_model.objects.count.return_value = 100
+        
+        mock_charities = []
+        for i in range(100):
+            mock_charity = Mock()
+            mock_charity.name = f"Charity {i}"
+            mock_charities.append(mock_charity)
+        
+        mock_charity_model.objects.all.return_value = mock_charities
+        mock_item_model.objects.filter.return_value.count.return_value = 10
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['items_per_charity']), 100)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_with_charity_special_characters_in_name(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        
+        mock_charity = Mock()
+        mock_charity.name = "Charity's \"Special\" Name & More <test>"
+        mock_charity_model.objects.all.return_value = [mock_charity]
+        
+        mock_item_model.objects.filter.return_value.count.return_value = 5
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data['items_per_charity'][0]['name'], 
+            "Charity's \"Special\" Name & More <test>"
+        )
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_response_structure(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        
+        mock_charity = Mock()
+        mock_charity.name = "Test Charity"
+        mock_charity_model.objects.all.return_value = [mock_charity]
+        
+        mock_item_model.objects.filter.return_value.count.return_value = 5
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertIn('total_items', response.data)
+        self.assertIn('total_charities', response.data)
+        self.assertIn('items_per_charity', response.data)
+        
+        self.assertIsInstance(response.data['items_per_charity'], list)
+        if len(response.data['items_per_charity']) > 0:
+            self.assertIn('name', response.data['items_per_charity'][0])
+            self.assertIn('item_count', response.data['items_per_charity'][0])
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_get_with_single_charity(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 25
+        mock_charity_model.objects.count.return_value = 1
+        
+        mock_charity = Mock()
+        mock_charity.name = "Only Charity"
+        mock_charity_model.objects.all.return_value = [mock_charity]
+        
+        mock_item_model.objects.filter.return_value.count.return_value = 25
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_items'], 25)
+        self.assertEqual(response.data['total_charities'], 1)
+        self.assertEqual(len(response.data['items_per_charity']), 1)
+        self.assertEqual(response.data['items_per_charity'][0]['item_count'], 25)
+
+
+class TestEbayReportViewInit(unittest.TestCase):
+
+    def test_init_creates_instance(self):
+        view = EbayReportView()
+        self.assertIsInstance(view, EbayReportView)
+
+    def test_permission_classes_set(self):
+        from rest_framework.permissions import IsAdminUser
+        self.assertIn(IsAdminUser, EbayReportView.permission_classes)
+
+
+class TestEbayReportViewIntegration(TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = EbayReportView.as_view()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_full_report_generation(self, mock_item_model, mock_charity_model):
+   
+        mock_item_model.objects.count.return_value = 50
+        mock_charity_model.objects.count.return_value = 3
+        
+        mock_charity_1 = Mock()
+        mock_charity_1.name = "Red Cross"
+        mock_charity_2 = Mock()
+        mock_charity_2.name = "UNICEF"
+        mock_charity_3 = Mock()
+        mock_charity_3.name = "WWF"
+        
+        mock_charity_model.objects.all.return_value = [
+            mock_charity_1,
+            mock_charity_2,
+            mock_charity_3
+        ]
+        
+        mock_item_model.objects.filter.return_value.count.side_effect = [20, 18, 12]
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_items'], 50)
+        self.assertEqual(response.data['total_charities'], 3)
+    
+        items_per_charity = response.data['items_per_charity']
+        self.assertEqual(len(items_per_charity), 3)
+        
+        charity_names = [entry['name'] for entry in items_per_charity]
+        self.assertIn("Red Cross", charity_names)
+        self.assertIn("UNICEF", charity_names)
+        self.assertIn("WWF", charity_names)
+        
+        total_items_in_charities = sum(entry['item_count'] for entry in items_per_charity)
+        self.assertEqual(total_items_in_charities, 50)
+
+
+class TestEbayReportViewDataTypes(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = EbayReportView.as_view()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_total_items_is_integer(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 10
+        mock_charity_model.objects.count.return_value = 0
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertIsInstance(response.data['total_items'], int)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_total_charities_is_integer(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 0
+        mock_charity_model.objects.count.return_value = 5
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertIsInstance(response.data['total_charities'], int)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_items_per_charity_is_list(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 0
+        mock_charity_model.objects.count.return_value = 0
+        mock_charity_model.objects.all.return_value = []
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertIsInstance(response.data['items_per_charity'], list)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_charity_name_is_string(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        
+        mock_charity = Mock()
+        mock_charity.name = "Test Charity"
+        mock_charity_model.objects.all.return_value = [mock_charity]
+        
+        mock_item_model.objects.filter.return_value.count.return_value = 5
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertIsInstance(response.data['items_per_charity'][0]['name'], str)
+
+    @patch('ebay.views.report_view.Charity')
+    @patch('ebay.views.report_view.Item')
+    def test_item_count_is_integer(self, mock_item_model, mock_charity_model):
+        mock_item_model.objects.count.return_value = 5
+        mock_charity_model.objects.count.return_value = 1
+        
+        mock_charity = Mock()
+        mock_charity.name = "Test Charity"
+        mock_charity_model.objects.all.return_value = [mock_charity]
+        
+        mock_item_model.objects.filter.return_value.count.return_value = 5
+        
+        request = self.factory.get('/api/report/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertIsInstance(response.data['items_per_charity'][0]['item_count'], int)
