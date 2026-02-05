@@ -17,27 +17,23 @@ def deleteInactiveItems():
     try:
 
         current_date = datetime.date.today()
-
         items = Item.objects.filter(updated_at__lte=current_date - datetime.timedelta(days=DAYS_WITHOUT_CHECKING))[:5000]
 
         for item in items:
 
-            try:
-                item_is_active = client.isItemActive(item.ebay_id)
+            item_is_active = client.isItemActive(item.ebay_id)
 
-                if item_is_active == True:
-                    item.updated_at = current_date
-                    Item.save(item)
-                    count += 1
-                elif item_is_active == "error":
-                    logger.error(f"Error retrieving item {item}")
-                    break
-                else:
-                    deleteItemFromDatabase(item.ebay_id)
-                    count += 1
-                    deleted += 1
-            except:
+            if item_is_active == True:
+                item.updated_at = current_date
+                Item.save(item)
+                count += 1
+            elif item_is_active == "error":
+                logger.error(f"Error retrieving item {item}")
                 continue
+            else:
+                deleteItemFromDatabase(item.ebay_id)
+                count += 1
+                deleted += 1
 
         logger.info(f"processed {count} items.")
         logger.info(f"deleted {deleted} items")
