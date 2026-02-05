@@ -6,6 +6,16 @@ from rest_framework import status
 from ..views.charity_views import EbayCharity
 from ebay.views.report_view import EbayReportView
 from django.contrib.auth.models import User as DjangoUser
+from django.db import IntegrityError
+import smtplib
+from ebay.views.user_views import (
+    GetUserProfile,
+    UpdateUserProfile,
+    GetUsers,
+    RegisterUser,
+    MyTokenObtainPairSerializer,
+    MyTokenObtainPairView
+)
 
 class TestEbayCharityGet(unittest.TestCase):
 
@@ -858,3 +868,713 @@ class TestEbayReportViewDataTypes(unittest.TestCase):
         response = self.view(request)
         
         self.assertIsInstance(response.data['items_per_charity'][0]['item_count'], int)
+
+########################## User View Tests #############################################################
+
+class TestGetUserProfileGet(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = GetUserProfile.as_view()
+        
+        self.mock_user = Mock(spec=DjangoUser)
+        self.mock_user.id = 1
+        self.mock_user.username = "testuser@example.com"
+        self.mock_user.email = "testuser@example.com"
+        self.mock_user.first_name = "Test"
+        self.mock_user.last_name = "User"
+        self.mock_user.is_staff = False
+        self.mock_user.is_authenticated = True
+
+    @patch('ebay.views.user_views.UserSerializer')
+    def test_get_returns_user_profile(self, mock_serializer):
+        expected_data = {
+            "id": 1,
+            "username": "testuser@example.com",
+            "email": "testuser@example.com",
+            "first_name": "Test",
+            "last_name": "User"
+        }
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request = self.factory.get('/api/users/profile/')
+        force_authenticate(request, user=self.mock_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected_data)
+        mock_serializer.assert_called_once_with(self.mock_user)
+
+    def test_get_unauthenticated_returns_error(self):
+        request = self.factory.get('/api/users/profile/')
+        
+        response = self.view(request)
+        
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+    @patch('ebay.views.user_views.UserSerializer')
+    def test_get_returns_correct_user_data(self, mock_serializer):
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {"id": 1, "username": "testuser@example.com"}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request = self.factory.get('/api/users/profile/')
+        force_authenticate(request, user=self.mock_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        mock_serializer.assert_called_with(self.mock_user)
+
+
+class TestGetUserProfilePut(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = GetUserProfile.as_view()
+        
+        self.mock_user = Mock(spec=DjangoUser)
+        self.mock_user.id = 1
+        self.mock_user.username = "testuser@example.com"
+        self.mock_user.email = "testuser@example.com"
+        self.mock_user.first_name = "Test"
+        self.mock_user.last_name = "User"
+        self.mock_user.is_staff = False
+        self.mock_user.is_authenticated = True
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_updates_user_profile(self, mock_make_password, mock_serializer):
+        mock_make_password.return_value = "hashed_password"
+        
+        expected_data = {
+            "id": 1,
+            "username": "updated@example.com",
+            "email": "updated@example.com",
+            "first_name": "Updated",
+            "last_name": "Name",
+            "token": "test_token"
+        }
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "first_name": "Updated",
+            "last_name": "Name",
+            "email": "updated@example.com",
+            "password": "[REDACTED:PASSWORD]"
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.mock_user.first_name, "Updated")
+        self.assertEqual(self.mock_user.last_name, "Name")
+        self.assertEqual(self.mock_user.email, "updated@example.com")
+        self.mock_user.save.assert_called_once()
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_updates_password_when_provided(self, mock_make_password, mock_serializer):
+        mock_make_password.return_value = "hashed_new_password"
+        
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {}
+        mock_serializer.return_value = mock_serializer_instance
+      
+        test_password = "[REDACTED:PASSWORD]"
+        request_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password": test_password
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        self.view(request)
+        
+        mock_make_password.assert_called_once_with(test_password)
+        self.assertEqual(self.mock_user.password, "hashed_new_password")
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_does_not_update_password_when_empty(self, mock_make_password, mock_serializer):
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password": ""
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        self.view(request)
+        
+        mock_make_password.assert_not_called()
+
+    def test_put_unauthenticated_returns_error(self):
+        request_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password": ""
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        
+        response = self.view(request)
+        
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+
+class TestUpdateUserProfile(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = UpdateUserProfile.as_view()
+        
+        self.mock_user = Mock(spec=DjangoUser)
+        self.mock_user.id = 1
+        self.mock_user.username = "testuser@example.com"
+        self.mock_user.email = "testuser@example.com"
+        self.mock_user.first_name = "Test"
+        self.mock_user.last_name = "User"
+        self.mock_user.is_staff = False
+        self.mock_user.is_authenticated = True
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_updates_user_profile(self, mock_make_password, mock_serializer):
+        mock_make_password.return_value = "hashed_password"
+        
+        expected_data = {
+            "id": 1,
+            "username": "updated@example.com",
+            "first_name": "Updated",
+            "last_name": "Name"
+        }
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "first_name": "Updated",
+            "last_name": "Name",
+            "email": "updated@example.com",
+            "password": "[REDACTED:PASSWORD]"
+        }
+        
+        request = self.factory.put('/api/users/profile/update/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.mock_user.first_name, "Updated")
+        self.assertEqual(self.mock_user.last_name, "Name")
+        self.mock_user.save.assert_called_once()
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    def test_put_without_password_change(self, mock_serializer):
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "first_name": "Updated",
+            "last_name": "Name",
+            "email": "updated@example.com",
+            "password": ""
+        }
+        
+        request = self.factory.put('/api/users/profile/update/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_unauthenticated_returns_error(self):
+        request_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password": ""
+        }
+        
+        request = self.factory.put('/api/users/profile/update/', request_data, format='json')
+        
+        response = self.view(request)
+        
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+
+class TestGetUsers(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = GetUsers.as_view()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+        
+        self.mock_regular_user = Mock(spec=DjangoUser)
+        self.mock_regular_user.id = 2
+        self.mock_regular_user.username = "regular"
+        self.mock_regular_user.is_staff = False
+        self.mock_regular_user.is_authenticated = True
+
+    @patch('ebay.views.user_views.UserSerializer')
+    @patch('ebay.views.user_views.User')
+    def test_get_returns_all_users(self, mock_user_model, mock_serializer):
+        mock_users = [Mock(), Mock(), Mock()]
+        mock_user_model.objects.all.return_value = mock_users
+        
+        expected_data = [
+            {"id": 1, "username": "user1"},
+            {"id": 2, "username": "user2"},
+            {"id": 3, "username": "user3"}
+        ]
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request = self.factory.get('/api/users/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+        mock_user_model.objects.all.assert_called_once()
+        mock_serializer.assert_called_once_with(mock_users, many=True)
+
+    @patch('ebay.views.user_views.UserSerializer')
+    @patch('ebay.views.user_views.User')
+    def test_get_returns_empty_list_when_no_users(self, mock_user_model, mock_serializer):
+        mock_user_model.objects.all.return_value = []
+        
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = []
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request = self.factory.get('/api/users/')
+        force_authenticate(request, user=self.mock_admin_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+    def test_get_permission_denied_for_non_admin(self):
+        request = self.factory.get('/api/users/')
+        force_authenticate(request, user=self.mock_regular_user)
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_permission_denied_for_unauthenticated(self):
+        request = self.factory.get('/api/users/')
+        
+        response = self.view(request)
+        
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+
+class TestRegisterUser(unittest.TestCase):
+    """Tests for RegisterUser POST method"""
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = RegisterUser.as_view()
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.FavoriteList')
+    @patch('ebay.views.user_views.User')
+    def test_post_creates_user_successfully(self, mock_user_model, mock_favorite_list, mock_serializer):
+        mock_user = Mock()
+        mock_user.id = 1
+        mock_user_model.objects.create_user.return_value = mock_user
+        
+        mock_fav_list = Mock()
+        mock_favorite_list.objects.create.return_value = mock_fav_list
+        
+        expected_data = {
+            "id": 1,
+            "username": "newuser@example.com",
+            "token": "test_token"
+        }
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "email": "newuser@example.com",
+            "password": "[REDACTED:PASSWORD]",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        
+        request = self.factory.post('/api/users/register/', request_data, format='json')
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        mock_user_model.objects.create_user.assert_called_once_with(
+            username="newuser@example.com",
+            email="newuser@example.com",
+            password="[REDACTED:PASSWORD]",
+            first_name="New",
+            last_name="User"
+        )
+
+    @patch('ebay.views.user_views.FavoriteList')
+    @patch('ebay.views.user_views.User')
+    def test_post_creates_favorite_list_for_user(self, mock_user_model, mock_favorite_list):
+        mock_user = Mock()
+        mock_user.id = 1
+        mock_user_model.objects.create_user.return_value = mock_user
+        
+        mock_fav_list = Mock()
+        mock_favorite_list.objects.create.return_value = mock_fav_list
+        
+        request_data = {
+            "email": "newuser@example.com",
+            "password": "[REDACTED:PASSWORD]",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        
+        request = self.factory.post('/api/users/register/', request_data, format='json')
+        
+        with patch('ebay.views.user_views.UserSerializerWithToken') as mock_serializer:
+            mock_serializer_instance = Mock()
+            mock_serializer_instance.data = {}
+            mock_serializer.return_value = mock_serializer_instance
+            
+            self.view(request)
+        
+        mock_favorite_list.objects.create.assert_called_once_with(user_id=1)
+        mock_fav_list.items.clear.assert_called_once()
+        mock_fav_list.charities.clear.assert_called_once()
+        mock_fav_list.save.assert_called_once()
+
+    @patch('ebay.views.user_views.User')
+    def test_post_user_already_exists_returns_error(self, mock_user_model):
+        mock_user_model.objects.create_user.side_effect = IntegrityError()
+        
+        request_data = {
+            "email": "existing@example.com",
+            "password": "[REDACTED:PASSWORD]",
+            "first_name": "Existing",
+            "last_name": "User"
+        }
+        
+        request = self.factory.post('/api/users/register/', request_data, format='json')
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['detail'], 'User already exists')
+
+    @patch('ebay.views.user_views.User')
+    def test_post_generic_exception_returns_error(self, mock_user_model):
+        mock_user_model.objects.create_user.side_effect = Exception("Database error")
+        
+        request_data = {
+            "email": "newuser@example.com",
+            "password": "[REDACTED:PASSWORD]",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        
+        request = self.factory.post('/api/users/register/', request_data, format='json')
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.FavoriteList')
+    @patch('ebay.views.user_views.User')
+    def test_post_returns_serialized_user_with_token(self, mock_user_model, mock_favorite_list, mock_serializer):
+        mock_user = Mock()
+        mock_user.id = 1
+        mock_user_model.objects.create_user.return_value = mock_user
+        
+        mock_fav_list = Mock()
+        mock_favorite_list.objects.create.return_value = mock_fav_list
+        
+        expected_data = {
+            "id": 1,
+            "username": "newuser@example.com",
+            "email": "newuser@example.com",
+            "first_name": "New",
+            "last_name": "User",
+            "token": "jwt_token_here"
+        }
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "email": "newuser@example.com",
+            "password": "[REDACTED:PASSWORD]",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        
+        request = self.factory.post('/api/users/register/', request_data, format='json')
+        
+        response = self.view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
+        mock_serializer.assert_called_once_with(mock_user, many=False)
+
+
+class TestRegisterUserCreateFavoriteList(unittest.TestCase):
+
+    @patch('ebay.views.user_views.FavoriteList')
+    def test_create_favorite_list_creates_and_clears(self, mock_favorite_list):
+        mock_fav_list = Mock()
+        mock_favorite_list.objects.create.return_value = mock_fav_list
+        
+        view = RegisterUser()
+        view.createFavoriteList(user_id=1)
+        
+        mock_favorite_list.objects.create.assert_called_once_with(user_id=1)
+        mock_fav_list.items.clear.assert_called_once()
+        mock_fav_list.charities.clear.assert_called_once()
+        mock_fav_list.save.assert_called_once()
+
+    @patch('ebay.views.user_views.FavoriteList')
+    def test_create_favorite_list_with_different_user_ids(self, mock_favorite_list):
+        mock_fav_list = Mock()
+        mock_favorite_list.objects.create.return_value = mock_fav_list
+        
+        view = RegisterUser()
+        
+        for user_id in [1, 2, 100, 999]:
+            mock_favorite_list.reset_mock()
+            mock_fav_list.reset_mock()
+            
+            view.createFavoriteList(user_id=user_id)
+            
+            mock_favorite_list.objects.create.assert_called_once_with(user_id=user_id)
+
+
+class TestMyTokenObtainPairSerializer(unittest.TestCase):
+
+    def test_serializer_class_inherits_from_token_obtain_pair(self):
+        from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+        self.assertTrue(issubclass(MyTokenObtainPairSerializer, TokenObtainPairSerializer))
+
+
+class TestMyTokenObtainPairView(unittest.TestCase):
+
+    def test_serializer_class_is_custom(self):
+        self.assertEqual(MyTokenObtainPairView.serializer_class, MyTokenObtainPairSerializer)
+
+    def test_view_inherits_from_token_obtain_pair_view(self):
+        from rest_framework_simplejwt.views import TokenObtainPairView
+        self.assertTrue(issubclass(MyTokenObtainPairView, TokenObtainPairView))
+
+
+class TestGetUserProfilePermissions(unittest.TestCase):
+
+    def test_permission_classes_include_is_authenticated(self):
+        from rest_framework.permissions import IsAuthenticated
+        self.assertIn(IsAuthenticated, GetUserProfile.permission_classes)
+
+
+class TestUpdateUserProfilePermissions(unittest.TestCase):
+
+    def test_permission_classes_include_is_authenticated(self):
+        from rest_framework.permissions import IsAuthenticated
+        self.assertIn(IsAuthenticated, UpdateUserProfile.permission_classes)
+
+
+class TestGetUsersPermissions(unittest.TestCase):
+
+    def test_permission_classes_include_is_admin_user(self):
+        from rest_framework.permissions import IsAdminUser
+        self.assertIn(IsAdminUser, GetUsers.permission_classes)
+
+
+class TestUserViewsIntegration(TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        
+        self.mock_admin_user = Mock(spec=DjangoUser)
+        self.mock_admin_user.id = 1
+        self.mock_admin_user.username = "admin"
+        self.mock_admin_user.is_staff = True
+        self.mock_admin_user.is_authenticated = True
+        
+        self.mock_regular_user = Mock(spec=DjangoUser)
+        self.mock_regular_user.id = 2
+        self.mock_regular_user.username = "regular@example.com"
+        self.mock_regular_user.email = "regular@example.com"
+        self.mock_regular_user.first_name = "Regular"
+        self.mock_regular_user.last_name = "User"
+        self.mock_regular_user.is_staff = False
+        self.mock_regular_user.is_authenticated = True
+
+    @patch('ebay.views.user_views.UserSerializer')
+    def test_get_profile_flow(self, mock_serializer):
+        view = GetUserProfile.as_view()
+        
+        expected_data = {
+            "id": 2,
+            "username": "regular@example.com",
+            "email": "regular@example.com",
+            "first_name": "Regular",
+            "last_name": "User"
+        }
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = expected_data
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request = self.factory.get('/api/users/profile/')
+        force_authenticate(request, user=self.mock_regular_user)
+        
+        response = view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], "regular@example.com")
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.FavoriteList')
+    @patch('ebay.views.user_views.User')
+    def test_register_user_flow(self, mock_user_model, mock_favorite_list, mock_serializer):
+        register_view = RegisterUser.as_view()
+        
+        mock_user = Mock()
+        mock_user.id = 3
+        mock_user_model.objects.create_user.return_value = mock_user
+        
+        mock_fav_list = Mock()
+        mock_favorite_list.objects.create.return_value = mock_fav_list
+        
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {"id": 3, "username": "newuser@example.com", "token": "token"}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        register_data = {
+            "email": "newuser@example.com",
+            "password": "[REDACTED:PASSWORD]",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        
+        request = self.factory.post('/api/users/register/', register_data, format='json')
+        response = register_view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
+
+
+class TestUserViewsEdgeCases(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        
+        self.mock_user = Mock(spec=DjangoUser)
+        self.mock_user.id = 1
+        self.mock_user.username = "testuser@example.com"
+        self.mock_user.is_staff = False
+        self.mock_user.is_authenticated = True
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_profile_with_special_characters_in_name(self, mock_make_password, mock_serializer):
+        view = GetUserProfile.as_view()
+        
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "first_name": "José",
+            "last_name": "O'Brien-Smith",
+            "email": "jose@example.com",
+            "password": ""
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        response = view(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.mock_user.first_name, "José")
+        self.assertEqual(self.mock_user.last_name, "O'Brien-Smith")
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_profile_updates_username_to_email(self, mock_make_password, mock_serializer):
+        view = GetUserProfile.as_view()
+        
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        request_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "newemail@example.com",
+            "password": ""
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        view(request)
+        
+        self.assertEqual(self.mock_user.username, "newemail@example.com")
+        self.assertEqual(self.mock_user.email, "newemail@example.com")
+
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.make_password')
+    def test_put_profile_with_long_password(self, mock_make_password, mock_serializer):
+        view = GetUserProfile.as_view()
+        
+        mock_make_password.return_value = "hashed_long_password"
+        mock_serializer_instance = Mock()
+        mock_serializer_instance.data = {}
+        mock_serializer.return_value = mock_serializer_instance
+        
+        long_password = "a" * 128
+        request_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password": long_password
+        }
+        
+        request = self.factory.put('/api/users/profile/', request_data, format='json')
+        force_authenticate(request, user=self.mock_user)
+        
+        view(request)
+        
+        mock_make_password.assert_called_once_with(long_password)
