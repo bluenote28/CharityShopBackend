@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ebay', '0011_add_category_field'),
+        ('ebay', '0010_remove_item_image'),
     ]
 
     operations = [

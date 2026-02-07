@@ -1,8 +1,10 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+import sys
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+TESTING = 'test' in sys.argv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -15,9 +17,6 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 ALLOWED_HOSTS = ['thecharityshop-9c7b08c3213c.herokuapp.com']
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,7 +36,9 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+        'PAGE_SIZE': 100
 }
 
 
@@ -185,7 +186,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
      "https://main.d3ky9hapmr6avy.amplifyapp.com",
-     "https://www.charityshopusa.com"   
+     "https://www.charityshopusa.com"
 ]
 
 LOGGING = {
