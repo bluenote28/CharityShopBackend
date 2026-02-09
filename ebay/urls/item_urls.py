@@ -2,7 +2,7 @@ from django.urls import path, register_converter
 from ebay.views.item_views import EbayCharityItems
 
 class CategoryWithSlashConverter:
-    regex = "[a-zA-Z,& /'-]+"
+    regex = "[a-zA-ZÀ-ÿ,& /'-]+"
 
     def to_python(self, value):
         return str(value)
