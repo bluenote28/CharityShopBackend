@@ -5,7 +5,10 @@ import traceback
 from django.db import connection, transaction
 
 logger = logging.getLogger(__name__)
-WORD_FILTER = {'playboy', 'sexy', 'sexual', 'sex'}
+WORD_FILTER = {'playboy','play boy', 'penthouse', 'skin art magazine', 
+'sexy', 'sexual', 'sex', 'orlies lowriding', 'easyriders',
+'sports illustrated swimsuit', 'swim suit edition', 
+'national lampoon humor magazine', 'red sonja', 'fhm magazine'}
 
 class DatabaseLoader():
 
