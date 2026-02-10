@@ -129,8 +129,15 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": os.environ.get('REDIS_URL'),
-        "OPTIONS": {       
+        "OPTIONS": {
                 "ssl_cert_reqs": None
+        }
+    },
+    "diskcache": {
+        "BACKEND": "diskcache.DjangoCache",
+        "LOCATION": os.path.join(BASE_DIR, "diskcache"),
+        "OPTIONS": {
+            "size_limit": 2 ** 30,  # 1GB
         }
     }
 }
