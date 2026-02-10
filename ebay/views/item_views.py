@@ -9,7 +9,7 @@ from django.core.cache import caches
 disk = caches['diskcache']
 ITEM_DETAIL_TTL = 60 * 30
 ITEM_SEARCH_TTL = 60 * 15
-ITEM_CATEGORY_TTL = 60 * 10080  
+ITEM_CATEGORY_TTL = 60 * 1440
 
 class EbayCharityItems(APIView):
 
