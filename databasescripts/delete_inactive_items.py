@@ -5,7 +5,7 @@ from ebay.ebay_client import EbayClient
 import datetime
 
 logger = logging.getLogger(__name__)
-DAYS_WITHOUT_CHECKING = 14
+DAYS_WITHOUT_CHECKING = 30
 
 
 def deleteInactiveItems():
