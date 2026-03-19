@@ -6,3 +6,4 @@ bin
 pyvenv.cfg
 ebay.yaml
 diskcache/
+staticfiles/
