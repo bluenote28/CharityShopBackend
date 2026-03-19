@@ -16,7 +16,7 @@ SECURE_HSTS_SECONDS = 36000000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-ALLOWED_HOSTS = ['thecharityshop-9c7b08c3213c.herokuapp.com', 'localhost']
+ALLOWED_HOSTS = ['thecharityshop-9c7b08c3213c.herokuapp.com']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -185,7 +185,10 @@ DEFAULT_FROM_EMAIL = 'charityshopusa@yahoo.com'
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
