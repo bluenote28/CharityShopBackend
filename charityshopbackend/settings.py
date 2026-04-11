@@ -116,16 +116,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'charityshopbackend.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASS'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': '5432',
-        'CONN_MAX_AGE': 0
+        "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
     }
-}
 
 CACHES = {
     "default": {
