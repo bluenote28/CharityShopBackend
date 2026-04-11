@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import sys
+import dj_database_url
 
 TESTING = 'test' in sys.argv
 
