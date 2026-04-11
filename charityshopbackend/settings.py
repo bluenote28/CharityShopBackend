@@ -17,7 +17,7 @@ SECURE_HSTS_SECONDS = 36000000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-ALLOWED_HOSTS = ['thecharityshop-9c7b08c3213c.herokuapp.com']
+ALLOWED_HOSTS = ['charity-shop-backend-xm3ai.ondigitalocean.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
