@@ -25,8 +25,9 @@ def deleteInactiveItems(items):
                 Item.save(item)
                 count += 1
             elif item_is_active == "error":
-                logger.error(f"Error retrieving item {item}")
-                continue
+                deleteItemFromDatabase(item.ebay_id)
+                count += 1
+                deleted += 1
             else:
                 deleteItemFromDatabase(item.ebay_id)
                 count += 1
