@@ -9,6 +9,7 @@ from rq import Queue
 from ebay.worker import get_redis
 import datetime
 from ebay.models import Charity
+from .refresh_database import refreshDatabase
 
 disk = caches['diskcache']
 
@@ -44,7 +45,7 @@ class RefreshDatabaseView(APIView):
 
         q = Queue(connection=get_redis())
 
-        q.enqueue(deleteInactiveItems, job_timeout=7200)
+        q.enqueue(refreshDatabase, job_timeout=172000)
 
         disk.clear()
         return Response("success")
