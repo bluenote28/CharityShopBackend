@@ -29,9 +29,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'ebay.apps.EbayConfig',
-    'django_rest_passwordreset', 
+    'django_rest_passwordreset',
     'databasescripts.apps.DatabasescriptsConfig',
-    'checkout.apps.CheckoutConfig'
 ]
 
 REST_FRAMEWORK = {
