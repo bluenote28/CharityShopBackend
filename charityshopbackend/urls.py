@@ -14,8 +14,6 @@ urlpatterns = [
     path('api/favorites/', FavoriteListView.as_view()),
     path('api/ai_assistant/', AiItemAssistantView.as_view()),
     path('api/refresh_items/', RefreshDatabaseView.as_view()),
-    path('api/checkout/', include('checkout.urls.session_urls')),
-    path('api/orders/', include('checkout.urls.order_urls')),
     path("password_reset/", auth_views.PasswordResetView.as_view(template_name='reset_password.html'), name="reset_password.html"),
     path("reset_password_sent/", auth_views.PasswordResetDoneView.as_view(template_name='reset_password_sent.html'), name="password_reset_done"),
     path("reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(template_name='reset.html'), name="password_reset_confirm"),
