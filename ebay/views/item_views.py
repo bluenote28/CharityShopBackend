@@ -5,6 +5,7 @@ from ebay.serializers import ItemSerializer
 from databasescripts.database_actions import retrieveItem, getItemsBySubCategory, getItemsByFilter
 from rest_framework.pagination import PageNumberPagination
 from django.core.cache import caches
+from ebay.search import search
 
 disk = caches['diskcache']
 ITEM_DETAIL_TTL = 60 * 30
@@ -39,7 +40,7 @@ class EbayCharityItems(APIView):
             if cached is not None:
                 return Response(cached)
 
-            items = Item.objects.filter(name__icontains=search_text)
+            items = search(search_text)
             paginated_items = self.paginator.paginate_queryset(items, request, self)
             serializer = ItemSerializer(paginated_items, many=True)
             response = self.paginator.get_paginated_response(serializer.data)
