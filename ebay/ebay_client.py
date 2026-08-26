@@ -45,6 +45,17 @@ class EbayClient():
                 return response.json()
             except Exception as e:
                 return {"error": f"Error fetching items from eBay API: {e}"}
+
+
+        def getItemDetails(self, item_id):
+            try:
+                token = self._get_ebay_token()
+                response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}?fieldgroups=CHARITY_DETAILS', headers={"Authorization": f'Bearer {token}'})
+                logger.info("response from ebay in ebay client: ", response.json())
+                data = response.json()
+                return {"seller_description": data['description'], "donation_percentage": data['charityTerms']['donationPercentage']}
+            except Exception as e:
+                return {"error": f"Error fetching item details from eBay API: {e}"}
             
         def isItemActive(self, item_id):
                try:
@@ -62,4 +73,3 @@ class EbayClient():
                except Exception as e:
                    print(f"Error fetching items from eBay API: {e}")
                    return "error"
-               
