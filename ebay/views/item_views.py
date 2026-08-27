@@ -6,7 +6,7 @@ from databasescripts.database_actions import retrieveItem, getItemsBySubCategory
 from rest_framework.pagination import PageNumberPagination
 from django.core.cache import caches
 from ebay.search import search
-from ebay.ebay_client import getItemDetails
+from ebay import ebay_client
 
 disk = caches['diskcache']
 ITEM_DETAIL_TTL = 60 * 30
@@ -29,7 +29,8 @@ class EbayCharityItems(APIView):
             item = retrieveItem(item_id)
 
             if item.donation_percentage is None:
-                item_details = getItemDetails(item_id)
+                client = ebay_client.EbayClient(1234567890)
+                item_details = client.getItemDetails(item_id)
                 item.donation_percentage = item_details['donation_percentage']
                 item.seller_description = item_details['seller_description']
                 item.save()
