@@ -28,6 +28,8 @@ class Item(models.Model):
     item_location = models.JSONField(null=True)
     condition = models.CharField(max_length=30, null=True)
     seller = models.JSONField(null=True)
+    seller_description = models.TextField(null=True)
+    donation_percentage = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
