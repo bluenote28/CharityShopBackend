@@ -1,8 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
-from ebay.tasks import update_database
-from .delete_inactive_items import deleteInactiveItems
 from django.db import close_old_connections
 from django.core.cache import caches
 from rq import Queue
@@ -10,6 +8,7 @@ from ebay.worker import get_redis
 import datetime
 from ebay.models import Charity
 from .refresh_database import refreshDatabase
+from .database_actions import updateCharityUpdatedAt
 
 disk = caches['diskcache']
 
@@ -27,12 +26,9 @@ class RefreshDatabaseView(APIView):
         close_old_connections()
 
         q = Queue(connection=get_redis())
-        q.enqueue(update_database, charity_id, job_timeout=10000,  result_ttl=3600, failure_ttl=86400)
+        q.enqueue(refreshDatabase, charity_id, job_timeout=10000,  result_ttl=3600, failure_ttl=86400)
 
-        current_date = datetime.date.today()
-        charity = Charity.objects.get(id=charity_id)
-        charity.updated_at = current_date
-        charity.save()
+        updateCharityUpdatedAt(charity_id)
 
         disk.clear()
         return Response("success")
