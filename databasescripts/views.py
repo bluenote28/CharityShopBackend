@@ -5,7 +5,6 @@ from django.db import close_old_connections
 from django.core.cache import caches
 from rq import Queue
 from ebay.worker import get_redis
-import datetime
 from ebay.models import Charity
 from .refresh_database import refreshDatabase
 from .database_actions import updateCharityUpdatedAt
