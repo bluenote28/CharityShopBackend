@@ -42,22 +42,39 @@ def deleteInactiveItems(items):
         logger.info(f"deleted {deleted} items")
 
 
-def refreshDatabase():
+def refreshDatabase(charity_id):
     from ebay.models import Item, FavoriteList, Charity
     from ebay.load_data_to_db import DatabaseLoader
 
-    favoriteLists = FavoriteList.objects.filter(items__isnull=False)
-    items = set()
-    for favoriteList in favoriteLists:
-        for item in favoriteList.items.all():
-            items.add(item)
+    if charity_id is None:
+        favoriteLists = FavoriteList.objects.filter(items__isnull=False)
+        items = set()
+        for favoriteList in favoriteLists:
+            for item in favoriteList.items.all():
+                items.add(item)
 
-    deleteInactiveItems(items)
+        deleteInactiveItems(items)
 
-    for charity in Charity.objects.all():
-        logger.info(f"refreshing charity {charity.name}")
-        Item.objects.filter(charity=charity).exclude(id__in=[item.id for item in items]).delete()
-        loader = DatabaseLoader(charity.id)
+        for charity in Charity.objects.all():
+            logger.info(f"refreshing charity {charity.name}")
+            Item.objects.filter(charity=charity).exclude(id__in=[item.id for item in items]).delete()
+            loader = DatabaseLoader(charity.id)
+            loader.load_items_to_db()
+            updateCharityUpdatedAt(charity.id)
+
+    else:
+
+        favoriteLists = FavoriteList.objects.filter(items__isnull=False, items__charity=charity_id)
+        items = set()
+        for favoriteList in favoriteLists:
+            for item in favoriteList.items.all():
+                items.add(item)
+
+        deleteInactiveItems(items)
+
+        logger.info(f"refreshing charity {charity_id}")
+        Item.objects.filter(charity=charity_id).exclude(id__in=[item.id for item in items]).delete()
+        loader = DatabaseLoader(charity_id)
         loader.load_items_to_db()
 
 
