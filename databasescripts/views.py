@@ -7,7 +7,6 @@ from rq import Queue
 from ebay.worker import get_redis
 from ebay.models import Charity
 from .refresh_database import refreshDatabase
-from .database_actions import updateCharityUpdatedAt
 
 disk = caches['diskcache']
 
@@ -26,8 +25,6 @@ class RefreshDatabaseView(APIView):
 
         q = Queue(connection=get_redis())
         q.enqueue(refreshDatabase, charity_id, job_timeout=10000,  result_ttl=3600, failure_ttl=86400)
-
-        updateCharityUpdatedAt(charity_id)
 
         disk.clear()
         return Response("success")
