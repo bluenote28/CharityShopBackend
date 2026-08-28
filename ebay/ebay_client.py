@@ -12,6 +12,7 @@ class EbayClient():
                 self.charity_id = charity_ID
                 self.charity_url = f'https://api.ebay.com/buy/browse/v1/item_summary/search?limit=200&offset=200&charity_ids={charity_ID}'
                 self.yaml_file_path = os.path.join(os.path.split(__file__)[0],'ebay.yaml')
+                self.token = self._get_ebay_token()
 
         def __create_yaml_secrets(self):
 
@@ -39,8 +40,7 @@ class EbayClient():
         
         def getItems(self):
             try:
-                token = self._get_ebay_token()
-                response = requests.get(f'{self.charity_url}', headers={"Authorization": f'Bearer {token}'})
+                response = requests.get(f'{self.charity_url}', headers={"Authorization": f'Bearer {self.token}'})
                 logger.info("response from ebay in ebay client: ", response.json())
                 return response.json()
             except Exception as e:
@@ -49,8 +49,7 @@ class EbayClient():
 
         def getItemDetails(self, item_id):
             try:
-                token = self._get_ebay_token()
-                response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}?fieldgroups=CHARITY_DETAILS', headers={"Authorization": f'Bearer {token}'})
+                response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}?fieldgroups=CHARITY_DETAILS', headers={"Authorization": f'Bearer {self.token}'})
                 logger.info("response from ebay in ebay client: ", response.json())
                 data = response.json()
                 return {"seller_description": data['description'], "donation_percentage": data['charityTerms']['donationPercentage']}
@@ -59,8 +58,7 @@ class EbayClient():
             
         def isItemActive(self, item_id):
                try:
-                   token = self._get_ebay_token()
-                   response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}', headers={"Authorization": f'Bearer {token}'})
+                   response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}', headers={"Authorization": f'Bearer {self.token}'})
                    data = response.json()
                    
                    item_status = data['estimatedAvailabilities'][0]['estimatedAvailabilityStatus']
