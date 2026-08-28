@@ -86,4 +86,9 @@ def getItemsByFilter(subcategory, filter):
         print(f'Error retrieving items by filter')
         return "Failure"
 
+def updateCharityUpdatedAt(charity_id):
+    current_date = datetime.date.today()
+    charity = Charity.objects.get(id=charity_id)
+    charity.updated_at = current_date
+    charity.save()
     
