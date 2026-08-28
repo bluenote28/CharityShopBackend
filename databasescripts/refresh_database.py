@@ -21,8 +21,6 @@ def deleteInactiveItems(items):
             item_is_active = client.isItemActive(item.ebay_id)
 
             if item_is_active == True:
-                item.updated_at = datetime.date.today()
-                Item.save(item)
                 count += 1
             elif item_is_active == "error":
                 deleteItemFromDatabase(item.ebay_id)
@@ -76,6 +74,7 @@ def refreshDatabase(charity_id):
         Item.objects.filter(charity=charity_id).exclude(id__in=[item.id for item in items]).delete()
         loader = DatabaseLoader(charity_id)
         loader.load_items_to_db()
+        updateCharityUpdatedAt(charity_id)
 
 
     
