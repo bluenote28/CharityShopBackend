@@ -4,7 +4,7 @@ from .models import Charity
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import close_old_connections
-from .tasks import update_database
+from databasescripts.refresh_database import refreshDatabase
 from rq import Queue
 from .worker import get_redis
 
@@ -14,22 +14,6 @@ def updateUser(sender, instance, **kwargs):
         user.username = user.email
 
 pre_save.connect(updateUser, sender=User)
-
-def loadDatabase(sender, instance, **kwargs):
-
-    if settings.TESTING:
-        return
-           
-    print("Loading Database Signal Triggered")
-    charity = instance
-    charity_id = charity.id
-
-    close_old_connections()
-
-    q = Queue(connection=get_redis())
-    q.enqueue(update_database, charity_id, job_timeout=10000,  result_ttl=3600, failure_ttl=86400)
- 
-post_save.connect(loadDatabase, sender=Charity)
 
 def registeredUser(sender, instance, created, **kwargs):
     
