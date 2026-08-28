@@ -8,7 +8,7 @@ DAYS_WITHOUT_CHECKING = 30
 def deleteInactiveItems(items):
     from ebay.models import Item
     from ebay.ebay_client import EbayClient
-    from .database_actions import deleteItemFromDatabase
+    from .database_actions import deleteItemFromDatabase, updateCharityUpdatedAt
 
     client = EbayClient("")
     count = 0
