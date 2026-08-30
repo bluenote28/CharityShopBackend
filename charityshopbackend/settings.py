@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'ebay.apps.EbayConfig',
     'django_rest_passwordreset',
     'databasescripts.apps.DatabasescriptsConfig',
+    'aiassistant.apps.AiassistantConfig',
     'django.contrib.postgres'
 ]
 
@@ -126,7 +127,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'charityshopbackend.wsgi.application'
 
-if len(sys.argv) == 1:
+if TESTING:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+elif len(sys.argv) == 1:
     DATABASES = {
         "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
     }
