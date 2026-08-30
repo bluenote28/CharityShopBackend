@@ -5,4 +5,4 @@ def search(query):
 
     search_query = SearchQuery(query, search_type='plain')
         
-    return Item.objects.annotate(search=SearchVector('name', 'seller_description', 'category')).filter(search=search_q
+    return Item.objects.annotate(search=SearchVector('name', 'seller_description', 'category')).filter(search=search_query)
