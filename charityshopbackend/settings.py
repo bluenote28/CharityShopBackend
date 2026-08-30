@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'ebay.apps.EbayConfig',
     'django_rest_passwordreset',
     'databasescripts.apps.DatabasescriptsConfig',
+    'django.contrib.postgres'
 ]
 
 REST_FRAMEWORK = {
