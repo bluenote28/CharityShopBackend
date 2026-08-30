@@ -82,9 +82,11 @@ class RegisterUser(APIView):
                 first_name=request.data['first_name'],
                 last_name=request.data['last_name']
             )
-        except smtplib.SMTPAuthenticationError: 
+        except smtplib.SMTPAuthenticationError:
             message = {'detail': 'Account Created. Redirect Failed. Please login from the login screen'}
-            self.createFavoriteList(user.id)
+            created_user = User.objects.filter(email=request.data.get('email')).first()
+            if created_user:
+                self.createFavoriteList(created_user.id)
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
         
         except IntegrityError:
