@@ -1,11 +1,8 @@
 from ebay.models import Item
-from ebay.constants import FILTER_OPTIONS
-from databasescripts.database_actions import getItemsByFilter
-
+from django.contrib.postgres.search import SearchVector,SearchQuery
 
 def search(query):
 
-    if query.title() in FILTER_OPTIONS.keys():
-        return getItemsByFilter(FILTER_OPTIONS[query.title()][0], FILTER_OPTIONS[query.title()][1])
+    search_query = SearchQuery(query, search_type='plain')
         
-    return Item.objects.filter(name__icontains=query)
+    return Item.objects.annotate(search=SearchVector('name', 'seller_description', 'category')).filter(search=search_query)
