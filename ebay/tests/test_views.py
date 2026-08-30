@@ -1576,6 +1576,44 @@ class TestRegisterUser(unittest.TestCase):
         self.assertEqual(response.data['detail'], 'User already exists')
 
     @patch('ebay.views.user_views.User')
+    def test_post_smtp_error_creates_favorite_list_when_user_exists(self, mock_user_model):
+        mock_user_model.objects.create_user.side_effect = smtplib.SMTPAuthenticationError(535, b"auth")
+        created = Mock()
+        created.id = 9
+        mock_user_model.objects.filter.return_value.first.return_value = created
+
+        request_data = {
+            "email": "newuser@example.com",
+            "password": "testpassword123",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        request = self.factory.post('/api/users/register/', request_data, format='json')
+
+        with patch.object(RegisterUser, 'createFavoriteList') as mock_create:
+            response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['detail'], 'Account Created. Redirect Failed. Please login from the login screen')
+        mock_create.assert_called_once_with(9)
+
+    @patch('ebay.views.user_views.User')
+    def test_post_smtp_error_without_created_user(self, mock_user_model):
+        mock_user_model.objects.create_user.side_effect = smtplib.SMTPAuthenticationError(535, b"auth")
+        mock_user_model.objects.filter.return_value.first.return_value = None
+
+        request = self.factory.post('/api/users/register/', {
+            "email": "newuser@example.com",
+            "password": "testpassword123",
+            "first_name": "New",
+            "last_name": "User"
+        }, format='json')
+
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch('ebay.views.user_views.User')
     def test_post_generic_exception_returns_error(self, mock_user_model):
         mock_user_model.objects.create_user.side_effect = Exception("Database error")
 
@@ -1667,6 +1705,26 @@ class TestMyTokenObtainPairSerializer(unittest.TestCase):
     def test_serializer_class_inherits_from_token_obtain_pair(self):
         from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
         self.assertTrue(issubclass(MyTokenObtainPairSerializer, TokenObtainPairSerializer))
+
+    @patch("ebay.views.user_views.UserSerializerWithToken")
+    @patch("rest_framework_simplejwt.serializers.TokenObtainPairSerializer.validate")
+    def test_validate_merges_user_serializer_fields(self, mock_super_validate, mock_user_serializer):
+        mock_super_validate.return_value = {"access": "a", "refresh": "r"}
+        mock_user_serializer.return_value.data = {
+            "email": "user@example.com",
+            "first_name": "Ada",
+            "token": "jwt",
+        }
+
+        serializer = MyTokenObtainPairSerializer()
+        serializer.user = Mock()
+
+        data = serializer.validate({"username": "user@example.com", "password": "secret"})
+
+        self.assertEqual(data["access"], "a")
+        self.assertEqual(data["email"], "user@example.com")
+        self.assertEqual(data["first_name"], "Ada")
+        self.assertEqual(data["token"], "jwt")
 
 
 class TestMyTokenObtainPairView(unittest.TestCase):

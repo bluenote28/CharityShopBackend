@@ -6,9 +6,20 @@ from ..ebay_client import EbayClient
 
 class TestEbayClientInit(unittest.TestCase):
 
+    def setUp(self):
+        self.token_patcher = patch.object(EbayClient, '_get_ebay_token', return_value='test_token')
+        self.token_patcher.start()
+
+    def tearDown(self):
+        self.token_patcher.stop()
+
     def test_init_sets_charity_id(self):
         client = EbayClient("12345")
         self.assertEqual(client.charity_id, "12345")
+
+    def test_init_stores_token(self):
+        client = EbayClient("12345")
+        self.assertEqual(client.token, "test_token")
 
     def test_init_sets_charity_url(self):
         client = EbayClient("12345")
@@ -28,6 +39,13 @@ class TestEbayClientInit(unittest.TestCase):
 
 
 class TestCreateYamlSecrets(unittest.TestCase):
+
+    def setUp(self):
+        self.token_patcher = patch.object(EbayClient, '_get_ebay_token', return_value='test_token')
+        self.token_patcher.start()
+
+    def tearDown(self):
+        self.token_patcher.stop()
 
     @patch.dict(os.environ, {
         'APP_ID': 'test_app_id',
@@ -89,6 +107,13 @@ class TestCreateYamlSecrets(unittest.TestCase):
 
 class TestGetEbayToken(unittest.TestCase):
 
+    def _client_without_init(self):
+        client = EbayClient.__new__(EbayClient)
+        client.charity_id = "12345"
+        client.charity_url = "https://api.ebay.com/example"
+        client.yaml_file_path = os.path.join("ebay", "ebay.yaml")
+        return client
+
     @patch('ebay.ebay_client.oauth2api')
     @patch('ebay.ebay_client.credentialutil')
     @patch('os.path.exists')
@@ -101,7 +126,7 @@ class TestGetEbayToken(unittest.TestCase):
         mock_oauth_instance.get_application_token.return_value = mock_token
         mock_oauth2api.return_value = mock_oauth_instance
         
-        client = EbayClient("12345")
+        client = self._client_without_init()
         token = client._get_ebay_token()
         
         self.assertEqual(token, "test_access_token")
@@ -122,7 +147,7 @@ class TestGetEbayToken(unittest.TestCase):
         mock_oauth_instance.get_application_token.return_value = mock_token
         mock_oauth2api.return_value = mock_oauth_instance
         
-        client = EbayClient("12345")
+        client = self._client_without_init()
         client._get_ebay_token()
         
         mock_create_yaml.assert_called_once()
@@ -141,7 +166,7 @@ class TestGetEbayToken(unittest.TestCase):
         mock_oauth_instance.get_application_token.return_value = mock_token
         mock_oauth2api.return_value = mock_oauth_instance
         
-        client = EbayClient("12345")
+        client = self._client_without_init()
         
         with patch.object(EbayClient, '_EbayClient__create_yaml_secrets') as mock_create:
             client._get_ebay_token()
@@ -159,7 +184,7 @@ class TestGetEbayToken(unittest.TestCase):
         mock_oauth_instance.get_application_token.return_value = mock_token
         mock_oauth2api.return_value = mock_oauth_instance
         
-        client = EbayClient("12345")
+        client = self._client_without_init()
         client._get_ebay_token()
         
         expected_scopes = ['https://api.ebay.com/oauth/api_scope']
@@ -206,15 +231,13 @@ class TestGetItems(unittest.TestCase):
         self.assertIn("Connection error", result["error"])
 
     @patch.object(EbayClient, '_get_ebay_token')
-    @patch('requests.get')
-    def test_get_items_handles_token_error(self, mock_get, mock_token):
+    def test_init_raises_when_token_fails(self, mock_token):
         mock_token.side_effect = Exception("Token error")
-        
-        client = EbayClient("12345")
-        result = client.getItems()
-        
-        self.assertIn("error", result)
-        self.assertIn("Token error", result["error"])
+
+        with self.assertRaises(Exception) as ctx:
+            EbayClient("12345")
+
+        self.assertIn("Token error", str(ctx.exception))
 
     @patch.object(EbayClient, '_get_ebay_token')
     @patch('requests.get')
@@ -374,14 +397,59 @@ class TestIsItemActive(unittest.TestCase):
             self.assertEqual(result, expected, f"Failed for status: {status}")
 
     @patch.object(EbayClient, '_get_ebay_token')
-    @patch('requests.get')
-    def test_is_item_active_handles_token_error(self, mock_get, mock_token):
+    def test_init_raises_when_token_retrieval_fails(self, mock_token):
         mock_token.side_effect = Exception("Token retrieval failed")
-        
+
+        with self.assertRaises(Exception) as ctx:
+            EbayClient("12345")
+
+        self.assertIn("Token retrieval failed", str(ctx.exception))
+
+
+class TestGetItemDetails(unittest.TestCase):
+
+    @patch.object(EbayClient, '_get_ebay_token', return_value="test_token")
+    @patch('requests.get')
+    def test_get_item_details_success(self, mock_get, mock_token):
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "description": "A vintage book",
+            "charityTerms": {"donationPercentage": "10.0"}
+        }
+        mock_get.return_value = mock_response
+
         client = EbayClient("12345")
-        result = client.isItemActive("v1|123456|0")
-        
-        self.assertEqual(result, "error")
+        result = client.getItemDetails("v1|123|0")
+
+        self.assertEqual(result["seller_description"], "A vintage book")
+        self.assertEqual(result["donation_percentage"], "10.0")
+        mock_get.assert_called_once_with(
+            "https://api.ebay.com/buy/browse/v1/item/v1|123|0?fieldgroups=CHARITY_DETAILS",
+            headers={"Authorization": "Bearer test_token"}
+        )
+
+    @patch.object(EbayClient, '_get_ebay_token', return_value="test_token")
+    @patch('requests.get')
+    def test_get_item_details_returns_error_on_exception(self, mock_get, mock_token):
+        mock_get.side_effect = Exception("timeout")
+
+        client = EbayClient("12345")
+        result = client.getItemDetails("v1|123|0")
+
+        self.assertIn("error", result)
+        self.assertIn("timeout", result["error"])
+
+    @patch.object(EbayClient, '_get_ebay_token', return_value="test_token")
+    @patch('requests.get')
+    def test_get_item_details_returns_error_on_missing_fields(self, mock_get, mock_token):
+        mock_response = Mock()
+        mock_response.json.return_value = {}
+        mock_get.return_value = mock_response
+
+        client = EbayClient("12345")
+        result = client.getItemDetails("v1|123|0")
+
+        self.assertIn("error", result)
 
 
 class TestEbayClientIntegration(unittest.TestCase):

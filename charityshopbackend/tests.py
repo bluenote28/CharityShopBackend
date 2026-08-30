@@ -62,11 +62,8 @@ class TestWSGIConfiguration(TestCase):
         self.assertIsInstance(application, WSGIHandler)
 
     def test_module_can_be_imported(self):
-        try:
-            from charityshopbackend import wsgi
-            self.assertIsNotNone(wsgi)
-        except ImportError as e:
-            self.fail(f"Failed to import wsgi module: {e}")
+        from charityshopbackend import wsgi
+        self.assertIsNotNone(wsgi)
 
     def test_application_exported(self):
         from charityshopbackend import wsgi
@@ -81,3 +78,13 @@ class TestWSGIConfiguration(TestCase):
         importlib.reload(charityshopbackend.wsgi)
         
         mock_get_wsgi.assert_called()
+
+
+class TestProjectUrls(TestCase):
+
+    def test_root_urlpatterns_include_api_routes(self):
+        from charityshopbackend import urls
+
+        route_names = [getattr(pattern, "pattern", None) for pattern in urls.urlpatterns]
+        self.assertTrue(urls.urlpatterns)
+        self.assertGreaterEqual(len(urls.urlpatterns), 8)

@@ -140,6 +140,23 @@ class TestProcessItem(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(result["shipping_price"])
 
+    def test_handles_shipping_option_without_cost(self):
+        self.sample_item["shippingOptions"] = [{}]
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+        self.assertIsNone(result["shipping_price"])
+
+    def test_handles_empty_thumbnail_images(self):
+        self.sample_item["thumbnailImages"] = []
+        result = self.method(self.sample_item)
+        self.assertIsNotNone(result)
+        self.assertIsNone(result["img_url"])
+
+    def test_handles_missing_categories_list(self):
+        self.sample_item["categories"] = [{"categoryId": "1", "categoryName": "Books"}]
+        result = self.method(self.sample_item)
+        self.assertIsNone(result)
+
     def test_handles_missing_thumbnail_images(self):
         del self.sample_item["thumbnailImages"]
         result = self.method(self.sample_item)

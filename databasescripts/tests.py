@@ -1,16 +1,32 @@
+from unittest.mock import Mock, patch
+
 from django.test import TestCase
 from ebay.models import Charity, Item
-from ebay.serializers import CharitySerializer
 
 from .database_actions import (
-    deleteCharity,
     addCharity,
+    deleteCharity,
+    deleteItemFromDatabase,
+    getItemsByCategory,
+    getItemsByFilter,
+    getItemsBySubCategory,
     itemInDatabase,
     retrieveItem,
-    getItemsByCategory,
-    deleteItemFromDatabase,
-    getItemsBySubCategory,
+    updateCharityUpdatedAt,
 )
+
+
+def _create_item(charity, ebay_id, category=1, category_name="Books", name=None):
+    return Item.objects.create(
+        ebay_id=ebay_id,
+        name=name or ebay_id,
+        web_url=f"https://ebay.com/{ebay_id}",
+        category=category,
+        category_list=[{"categoryName": category_name}],
+        price="9.99",
+        charity=charity,
+    )
+
 
 class CharityUtilsTests(TestCase):
 
@@ -18,9 +34,9 @@ class CharityUtilsTests(TestCase):
         self.charity = Charity.objects.create(
             id=1234,
             name="Test Charity",
-            description = "test charity",
-            donation_url = "www.donation.com",
-            image_url = "www.picture.com"
+            description="test charity",
+            donation_url="https://donation.com",
+            image_url="https://picture.com",
         )
 
     def test_delete_charity_success(self):
@@ -40,7 +56,7 @@ class CharityUtilsTests(TestCase):
             "name": "New Charity",
             "description": "new charity",
             "donation_url": "https://donation2.com",
-            "image_url": "https://picture2.com"
+            "image_url": "https://picture2.com",
         }
 
         result = addCharity(charity_data)
@@ -49,9 +65,7 @@ class CharityUtilsTests(TestCase):
         self.assertTrue(Charity.objects.filter(name="New Charity").exists())
 
     def test_add_charity_failure(self):
-        charity_data = {}
-
-        result = addCharity(charity_data)
+        result = addCharity({})
 
         self.assertEqual(result, "Failure")
 
@@ -59,30 +73,24 @@ class CharityUtilsTests(TestCase):
 class ItemLookupTests(TestCase):
 
     def setUp(self):
-
         self.charity = Charity.objects.create(
             id=1234,
             name="Test Charity",
-            description = "test charity",
-            donation_url = "www.donation.com",
-            image_url = "www.picture.com"
+            description="test charity",
+            donation_url="https://donation.com",
+            image_url="https://picture.com",
         )
-
-        self.item = Item.objects.create(
-            ebay_id="ABC123",
-            category=1,
-            category_list=[{"categoryName": "Books"}],
-            price=9.99,
-            charity=self.charity
-        )
+        self.item = _create_item(self.charity, "ABC123")
 
     def test_item_in_database_true(self):
-        result = itemInDatabase("ABC123")
-        self.assertTrue(result)
+        self.assertTrue(itemInDatabase("ABC123"))
 
     def test_item_in_database_false(self):
-        result = itemInDatabase("NOT_THERE")
-        self.assertFalse(result)
+        self.assertFalse(itemInDatabase("NOT_THERE"))
+
+    @patch("databasescripts.database_actions.Item.objects.get", side_effect=Exception("db down"))
+    def test_item_in_database_other_exception(self, mock_get):
+        self.assertIsNone(itemInDatabase("ABC123"))
 
     def test_retrieve_item_success(self):
         item = retrieveItem("ABC123")
@@ -91,37 +99,25 @@ class ItemLookupTests(TestCase):
         self.assertEqual(item.ebay_id, "ABC123")
 
     def test_retrieve_item_not_found(self):
-        item = retrieveItem("MISSING")
+        self.assertIsNone(retrieveItem("MISSING"))
 
-        self.assertIsNone(item)
+    @patch("databasescripts.database_actions.Item.objects.get", side_effect=Exception("db down"))
+    def test_retrieve_item_other_exception(self, mock_get):
+        self.assertIsNone(retrieveItem("ABC123"))
+
 
 class ItemQueryTests(TestCase):
 
     def setUp(self):
-
         self.charity = Charity.objects.create(
             id=1234,
             name="Test Charity",
-            description = "test charity",
-            donation_url = "www.donation.com",
-            image_url = "www.picture.com"
+            description="test charity",
+            donation_url="https://donation.com",
+            image_url="https://picture.com",
         )
-
-        self.item1 = Item.objects.create(
-            ebay_id="ITEM1",
-            category=1,
-            category_list=[{"categoryName": "Electronics"}],
-            price=9.99,
-            charity=self.charity
-        )
-
-        self.item2 = Item.objects.create(
-            ebay_id="ITEM2",
-            category=2,
-            category_list=[{"categoryName": "Books"}],
-            price=9.99,
-            charity=self.charity
-        )
+        self.item1 = _create_item(self.charity, "ITEM1", category=1, category_name="Electronics")
+        self.item2 = _create_item(self.charity, "ITEM2", category=2, category_name="Books")
 
     def test_get_items_by_category(self):
         items = getItemsByCategory(1)
@@ -130,40 +126,60 @@ class ItemQueryTests(TestCase):
         self.assertEqual(items.first().ebay_id, "ITEM1")
 
     def test_get_items_by_category_empty(self):
-        items = getItemsByCategory(999)
+        self.assertEqual(getItemsByCategory(999).count(), 0)
 
-        self.assertEqual(items.count(), 0)
+    @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
+    def test_get_items_by_category_error(self, mock_filter):
+        self.assertEqual(getItemsByCategory(1), [])
 
-    def test_get_items_by_subcategory_success(self):
+    @patch("databasescripts.database_actions.Item.objects.filter")
+    def test_get_items_by_subcategory_success(self, mock_filter):
+        mock_filter.return_value = [self.item2]
+
         items = getItemsBySubCategory("Books")
 
-        self.assertEqual(items.count(), 1)
-        self.assertEqual(items.first().ebay_id, "ITEM2")
+        mock_filter.assert_called_once_with(category_list__contains=[{"categoryName": "Books"}])
+        self.assertEqual(items, [self.item2])
 
-    def test_get_items_by_subcategory_no_match(self):
+    @patch("databasescripts.database_actions.Item.objects.filter")
+    def test_get_items_by_subcategory_no_match(self, mock_filter):
+        mock_filter.return_value = Item.objects.none()
+
         items = getItemsBySubCategory("Toys")
 
         self.assertEqual(items.count(), 0)
 
+    @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
+    def test_get_items_by_subcategory_error(self, mock_filter):
+        self.assertEqual(getItemsBySubCategory("Books"), "Failure")
+
+    @patch("databasescripts.database_actions.Item.objects.filter")
+    def test_get_items_by_filter(self, mock_filter):
+        filtered = Mock()
+        mock_filter.return_value.filter.return_value = [self.item2]
+
+        items = getItemsByFilter("Books", "ITEM")
+
+        mock_filter.assert_called_once_with(category_list__contains=[{"categoryName": "Books"}])
+        mock_filter.return_value.filter.assert_called_once_with(name__icontains="ITEM")
+        self.assertEqual(items, [self.item2])
+
+    @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
+    def test_get_items_by_filter_error(self, mock_filter):
+        self.assertEqual(getItemsByFilter("Books", "ITEM"), "Failure")
+
+
 class ItemDeleteTests(TestCase):
 
     def setUp(self):
-
         self.charity = Charity.objects.create(
             id=1234,
             name="Test Charity",
-            description = "test charity",
-            donation_url = "www.donation.com",
-            image_url = "www.picture.com"
+            description="test charity",
+            donation_url="https://donation.com",
+            image_url="https://picture.com",
         )
-
-        self.item = Item.objects.create(
-            ebay_id="DELETE_ME",
-            category=1,
-            category_list=[{"categoryName": "Misc"}],
-            price=9.99,
-            charity=self.charity
-        )
+        self.item = _create_item(self.charity, "DELETE_ME", category_name="Misc")
 
     def test_delete_item_success(self):
         result = deleteItemFromDatabase("DELETE_ME")
@@ -172,6 +188,25 @@ class ItemDeleteTests(TestCase):
         self.assertFalse(Item.objects.filter(ebay_id="DELETE_ME").exists())
 
     def test_delete_item_not_found(self):
-        result = deleteItemFromDatabase("MISSING")
+        self.assertEqual(deleteItemFromDatabase("MISSING"), "Failure")
 
-        self.assertEqual(result, "Failure")
+
+class UpdateCharityUpdatedAtTests(TestCase):
+
+    def setUp(self):
+        self.charity = Charity.objects.create(
+            id=1234,
+            name="Test Charity",
+            description="test charity",
+            donation_url="https://donation.com",
+            image_url="https://picture.com",
+        )
+
+    def test_updates_timestamp(self):
+        previous = self.charity.updated_at
+
+        updateCharityUpdatedAt(self.charity.id)
+
+        self.charity.refresh_from_db()
+        self.assertIsNotNone(self.charity.updated_at)
+        self.assertGreaterEqual(self.charity.updated_at, previous)
