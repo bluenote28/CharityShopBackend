@@ -28,6 +28,9 @@ class EbayCharityItems(APIView):
 
             item = retrieveItem(item_id)
 
+            if item is None:
+                return Response("Item not found", status=404)
+
             if item.donation_percentage is None:
                 client = ebay_client.EbayClient(1234567890)
                 item_details = client.getItemDetails(item_id)
@@ -35,12 +38,9 @@ class EbayCharityItems(APIView):
                 item.seller_description = item_details['seller_description']
                 item.save()
 
-            if item is not None:
-                serializer = ItemSerializer(item)
-                disk.set(cache_key, serializer.data, ITEM_DETAIL_TTL)
-                return Response(serializer.data)
-            else:
-                return Response("Item not found", status=404)
+            serializer = ItemSerializer(item)
+            disk.set(cache_key, serializer.data, ITEM_DETAIL_TTL)
+            return Response(serializer.data)
 
         elif search_text is not None:
             page = request.query_params.get('page', 1)
