@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Charity, Item, FavoriteList
+from .models import Charity, Item, FavoriteList, Purchase
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -21,6 +21,26 @@ class FavoriteListSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoriteList
         fields = '__all__'
+
+class PurchaseSerializer(serializers.ModelSerializer):
+    charity_name = serializers.CharField(source='charity.name', read_only=True)
+
+    class Meta:
+        model = Purchase
+        fields = [
+            'id',
+            'user',
+            'item_name',
+            'amount',
+            'donation_percentage',
+            'charity',
+            'charity_name',
+            'purchased_at',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
 
 class UserSerializer(serializers.ModelSerializer):
 
