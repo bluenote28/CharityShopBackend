@@ -51,6 +51,7 @@ class SerializerTests(TestCase):
         data = ItemSerializer(self.item).data
         self.assertEqual(data["ebay_id"], "ITEM1")
         self.assertEqual(data["name"], "Vintage Lamp")
+        self.assertNotIn("search_vector", data)
 
     def test_favorite_list_nests_items_and_charities(self):
         data = FavoriteListSerializer(self.favorite_list).data
