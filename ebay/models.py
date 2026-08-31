@@ -69,3 +69,25 @@ class FavoriteList(models.Model):
 
     def __str__(self):
         return f"FavoriteList of User {self.user_id}"
+
+
+class Purchase(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="purchases",
+    )
+    item_name = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    donation_percentage = models.DecimalField(max_digits=4, decimal_places=1)
+    charity = models.ForeignKey(
+        Charity,
+        on_delete=models.CASCADE,
+        related_name="purchases",
+    )
+    purchased_at = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.item_name} — {self.amount} to {self.charity.name}"
