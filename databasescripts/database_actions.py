@@ -1,5 +1,6 @@
 from ebay.models import Charity, Item
 from ebay.serializers import CharitySerializer
+from django.contrib.postgres.search import SearchQuery
 import logging, datetime
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,12 @@ def getItemsBySubCategory(subcategory):
 
 def getItemsByFilter(subcategory, filter):
     try:
-         items = Item.objects.filter(category_list__contains=[{"categoryName": subcategory}]).filter(name__icontains=filter)
+         items = Item.objects.filter(category_list__contains=[{"categoryName": subcategory}])
+         query = (filter or "").strip()
+         if query:
+             items = items.filter(
+                 search_vector=SearchQuery(query, search_type="plain", config="english")
+             )
          return items
     except Exception as e:
         print(f'Error retrieving items by filter')
