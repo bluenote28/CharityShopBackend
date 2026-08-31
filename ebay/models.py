@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.db import models
 from django.db.models import GeneratedField
@@ -44,6 +45,15 @@ class Item(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            GinIndex(
+                fields=["category_list"],
+                name="ebay_item_category_list_gin",
+                opclasses=["jsonb_path_ops"],
+            ),
+        ]
 
     def __str__(self):
         return self.name
