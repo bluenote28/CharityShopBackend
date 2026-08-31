@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/items/', include('ebay.urls.item_urls')),
     path('api/users/', include('ebay.urls.user_urls')),
     path('api/report/', include('ebay.urls.report_urls')),
+    path('api/purchases/', include('ebay.urls.purchase_urls')),
     path('api/favorites/', FavoriteListView.as_view()),
     path('api/ai_assistant/', AiItemAssistantView.as_view()),
     path('api/refresh_items/', RefreshDatabaseView.as_view()),
