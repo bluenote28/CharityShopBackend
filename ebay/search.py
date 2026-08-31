@@ -1,22 +1,17 @@
-from ebay.models import Item
-from ebay.constants import FILTER_OPTIONS
-from django.contrib.postgres.search import SearchVector,SearchQuery
+from django.contrib.postgres.search import SearchQuery, SearchRank
+from django.db.models import F
 
-def inFilterOptions(query):
-    return query.title() in FILTER_OPTIONS.keys()
+from ebay.models import Item
+
 
 def search(query):
-    search_query = SearchQuery(query, search_type='plain')
+    query = (query or "").strip()
+    if not query:
+        return Item.objects.none()
 
-    if inFilterOptions(query):
-        name_vector = SearchVector('name', weight='B')
-        category_vector = SearchVector('category', weight='A')
-        description_vector = SearchVector('seller_description', weight='C')
-    else:
-        name_vector = SearchVector('name', weight='B')
-        category_vector = SearchVector('category', weight='C')
-        description_vector = SearchVector('seller_description', weight='A')
-
-    search_vector = name_vector + category_vector + description_vector
-
-    return Item.objects.annotate(search=search_vector).filter(search=search_query)
+    search_query = SearchQuery(query, search_type="plain", config="english")
+    return (
+        Item.objects.filter(search_vector=search_query)
+        .annotate(rank=SearchRank(F("search_vector"), search_query))
+        .order_by("-rank")
+    )
