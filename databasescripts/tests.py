@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 from ebay.models import Charity, Item
@@ -153,15 +153,27 @@ class ItemQueryTests(TestCase):
     def test_get_items_by_subcategory_error(self, mock_filter):
         self.assertEqual(getItemsBySubCategory("Books"), "Failure")
 
+    @patch("databasescripts.database_actions.SearchQuery")
     @patch("databasescripts.database_actions.Item.objects.filter")
-    def test_get_items_by_filter(self, mock_filter):
-        filtered = Mock()
+    def test_get_items_by_filter(self, mock_filter, mock_query):
+        mock_query.return_value = "query-object"
         mock_filter.return_value.filter.return_value = [self.item2]
 
         items = getItemsByFilter("Books", "ITEM")
 
         mock_filter.assert_called_once_with(category_list__contains=[{"categoryName": "Books"}])
-        mock_filter.return_value.filter.assert_called_once_with(name__icontains="ITEM")
+        mock_query.assert_called_once_with("ITEM", search_type="plain", config="english")
+        mock_filter.return_value.filter.assert_called_once_with(search_vector="query-object")
+        self.assertEqual(items, [self.item2])
+
+    @patch("databasescripts.database_actions.SearchQuery")
+    @patch("databasescripts.database_actions.Item.objects.filter")
+    def test_get_items_by_filter_skips_blank_query(self, mock_filter, mock_query):
+        mock_filter.return_value = [self.item2]
+
+        items = getItemsByFilter("Books", "  ")
+
+        mock_query.assert_not_called()
         self.assertEqual(items, [self.item2])
 
     @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
