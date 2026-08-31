@@ -11,7 +11,7 @@ class CharitySerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
-        fields = '__all__'
+        exclude = ('search_vector',)
 
 class FavoriteListSerializer(serializers.ModelSerializer):
 
