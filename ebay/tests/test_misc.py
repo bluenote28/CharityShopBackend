@@ -2,7 +2,7 @@ import unittest
 
 from ebay import admin, constants
 from ebay.apps import EbayConfig
-from ebay.urls import charity_urls, item_urls, report_urls, user_urls
+from ebay.urls import charity_urls, item_urls, purchase_urls, report_urls, user_urls
 
 
 class TestAppModulesImport(unittest.TestCase):
@@ -19,6 +19,7 @@ class TestAppModulesImport(unittest.TestCase):
         self.assertTrue(item_urls.urlpatterns)
         self.assertTrue(report_urls.urlpatterns)
         self.assertTrue(user_urls.urlpatterns)
+        self.assertTrue(purchase_urls.urlpatterns)
 
     def test_ebay_config_name(self):
         self.assertEqual(EbayConfig.name, "ebay")
