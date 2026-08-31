@@ -1,11 +1,12 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
-from ebay.models import Charity, FavoriteList, Item
+from ebay.models import Charity, FavoriteList, Item, Purchase
 from ebay.serializers import (
     CharitySerializer,
     FavoriteListSerializer,
     ItemSerializer,
+    PurchaseSerializer,
     UserSerializer,
     UserSerializerWithToken,
 )
@@ -75,7 +76,32 @@ class SerializerTests(TestCase):
         self.assertTrue(data["token"])
         self.assertTrue(data["refresh"])
 
+    def test_purchase_serializer_includes_item_name_and_charity_name(self):
+        purchase = Purchase.objects.create(
+            user=self.user,
+            item_name="Vintage Lamp",
+            amount="12.50",
+            donation_percentage="10.0",
+            charity=self.charity,
+            purchased_at="2026-08-30",
+        )
+        data = PurchaseSerializer(purchase).data
+        self.assertEqual(data["item_name"], "Vintage Lamp")
+        self.assertEqual(data["charity"], self.charity.id)
+        self.assertEqual(data["charity_name"], "Good Cause")
+        self.assertEqual(data["user"], self.user.id)
+        self.assertNotIn("search_vector", data)
+
     def test_model_str_methods(self):
         self.assertEqual(str(self.charity), "Good Cause")
         self.assertEqual(str(self.item), "Vintage Lamp")
         self.assertEqual(str(self.favorite_list), f"FavoriteList of User {self.user.id}")
+        purchase = Purchase.objects.create(
+            user=self.user,
+            item_name="Vintage Lamp",
+            amount="12.50",
+            donation_percentage="10.0",
+            charity=self.charity,
+            purchased_at="2026-08-30",
+        )
+        self.assertEqual(str(purchase), "Vintage Lamp — 12.50 to Good Cause")
