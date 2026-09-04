@@ -8,6 +8,7 @@ from .database_actions import (
     deleteCharity,
     deleteItemFromDatabase,
     getItemsByCategory,
+    getItemsByCharity,
     getItemsByFilter,
     getItemsBySubCategory,
     itemInDatabase,
@@ -179,6 +180,28 @@ class ItemQueryTests(TestCase):
     @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
     def test_get_items_by_filter_error(self, mock_filter):
         self.assertEqual(getItemsByFilter("Books", "ITEM"), "Failure")
+
+    def test_get_items_by_charity(self):
+        other = Charity.objects.create(
+            id=5678,
+            name="Other Charity",
+            description="other charity",
+            donation_url="https://other.com",
+            image_url="https://other.com/pic.png",
+        )
+        _create_item(other, "OTHER1", category=1, category_name="Electronics")
+
+        items = getItemsByCharity(self.charity.id)
+
+        self.assertEqual(items.count(), 2)
+        self.assertTrue(all(item.charity_id == self.charity.id for item in items))
+
+    def test_get_items_by_charity_empty(self):
+        self.assertEqual(getItemsByCharity(999).count(), 0)
+
+    @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
+    def test_get_items_by_charity_error(self, mock_filter):
+        self.assertEqual(getItemsByCharity(1234), "Failure")
 
 
 class ItemDeleteTests(TestCase):
