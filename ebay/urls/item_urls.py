@@ -13,6 +13,8 @@ class CategoryWithSlashConverter:
 register_converter(CategoryWithSlashConverter, "cat")
 
 urlpatterns = [
+    path('ebaycharityitems/charity/<int:charity_id>/search/<str:search_text>', EbayCharityItems.as_view()),
+    path('ebaycharityitems/charity/<int:charity_id>', EbayCharityItems.as_view()),
     path('ebaycharityitems/<str:item_id>', EbayCharityItems.as_view()),
     path('ebaycharityitems/search/<str:search_text>', EbayCharityItems.as_view()),
     path('ebaycharityitems/category/<cat:category_id>/<str:filter>', EbayCharityItems.as_view()),
