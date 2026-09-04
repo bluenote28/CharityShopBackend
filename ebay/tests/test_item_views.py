@@ -26,7 +26,7 @@ class TestEbayCharityItemsGet(unittest.TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.data,
-            "Please provide an item_id, search_text, or category_id",
+            "Please provide an item_id, search_text, category_id, or charity_id",
         )
 
     def test_item_cache_hit(self):
@@ -168,4 +168,58 @@ class TestEbayCharityItemsGet(unittest.TestCase):
             response = self.view(request, category_id="Books", filter="hardcover")
 
         mock_filter.assert_called_once_with("Books", "hardcover")
+        self.assertEqual(response.data["count"], 1)
+
+    def test_charity_cache_hit(self):
+        cached = {"results": []}
+        self.mock_disk.get.return_value = cached
+
+        request = self.factory.get("/api/items/ebaycharityitems/charity/123")
+        response = self.view(request, charity_id=123)
+
+        self.assertEqual(response.data, cached)
+        self.mock_disk.get.assert_called_once_with("items_charity_123_p1")
+
+    @patch("ebay.views.item_views.ItemSerializer")
+    @patch("ebay.views.item_views.getItemsByCharity")
+    def test_charity_without_search(self, mock_charity, mock_serializer):
+        mock_charity.return_value = [Mock()]
+        mock_serializer.return_value.data = [{"id": 1}]
+
+        request = self.factory.get("/api/items/ebaycharityitems/charity/123")
+        with patch.object(EbayCharityItems, "paginator") as mock_paginator:
+            mock_paginator.paginate_queryset.return_value = [Mock()]
+            mock_paginator.get_paginated_response.return_value = Response(
+                {"count": 1, "results": [{"id": 1}]}
+            )
+            response = self.view(request, charity_id=123)
+
+        mock_charity.assert_called_once_with(123)
+        self.assertEqual(response.data["count"], 1)
+
+    def test_charity_search_cache_hit(self):
+        cached = {"results": []}
+        self.mock_disk.get.return_value = cached
+
+        request = self.factory.get("/api/items/ebaycharityitems/charity/123/search/lamp")
+        response = self.view(request, charity_id=123, search_text="lamp")
+
+        self.assertEqual(response.data, cached)
+        self.mock_disk.get.assert_called_once_with("items_charity_123_search_lamp_p1")
+
+    @patch("ebay.views.item_views.ItemSerializer")
+    @patch("ebay.views.item_views.search")
+    def test_charity_with_search(self, mock_search, mock_serializer):
+        mock_search.return_value = [Mock()]
+        mock_serializer.return_value.data = [{"id": 1}]
+
+        request = self.factory.get("/api/items/ebaycharityitems/charity/123/search/lamp")
+        with patch.object(EbayCharityItems, "paginator") as mock_paginator:
+            mock_paginator.paginate_queryset.return_value = [Mock()]
+            mock_paginator.get_paginated_response.return_value = Response(
+                {"count": 1, "results": [{"id": 1}]}
+            )
+            response = self.view(request, charity_id=123, search_text="lamp")
+
+        mock_search.assert_called_once_with("lamp", charity_id=123)
         self.assertEqual(response.data["count"], 1)
