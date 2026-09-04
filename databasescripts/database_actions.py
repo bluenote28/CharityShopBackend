@@ -92,6 +92,13 @@ def getItemsByFilter(subcategory, filter):
         print(f'Error retrieving items by filter')
         return "Failure"
 
+def getItemsByCharity(charity_id):
+    try:
+        return Item.objects.filter(charity_id=charity_id)
+    except Exception as e:
+        print(f'Error retrieving items by charity: {e}')
+        return "Failure"
+
 def updateCharityUpdatedAt(charity_id):
     current_date = datetime.date.today()
     charity = Charity.objects.get(id=charity_id)
