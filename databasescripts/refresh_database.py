@@ -1,6 +1,8 @@
 import logging
 import datetime
 
+from django.utils import timezone
+
 logger = logging.getLogger(__name__)
 DAYS_SINCE_CHECKING = 7
 
@@ -55,7 +57,7 @@ def refreshDatabase(charity_id=None):
         deleteInactiveItems(items)
 
         for charity in Charity.objects.all():
-            if datetime.datetime.now() - charity.updated_at > datetime.timedelta(days=DAYS_SINCE_CHECKING):
+            if timezone.now() - charity.updated_at < datetime.timedelta(days=DAYS_SINCE_CHECKING):
                 logger.info(f"charity {charity.name} has been updated in the last {DAYS_SINCE_CHECKING} days, skipping")
                 continue
 
