@@ -40,7 +40,7 @@ def deleteInactiveItems(items):
         logger.info(f"deleted {deleted} items")
 
 
-def refreshDatabase(charity_id):
+def refreshDatabase(charity_id=None):
     from ebay.models import Item, FavoriteList, Charity
     from ebay.load_data_to_db import DatabaseLoader
     from .database_actions import updateCharityUpdatedAt
