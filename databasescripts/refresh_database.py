@@ -2,7 +2,7 @@ import logging
 import datetime
 
 logger = logging.getLogger(__name__)
-DAYS_WITHOUT_CHECKING = 30
+DAYS_SINCE_CHECKING = 7
 
 
 def deleteInactiveItems(items):
@@ -55,6 +55,11 @@ def refreshDatabase(charity_id):
         deleteInactiveItems(items)
 
         for charity in Charity.objects.all():
+            today = datetime.datetime.now().date()
+            if charity.updated_at > today - datetime.timedelta(days=DAYS_WITHOUT_CHECKING):
+                logger.info(f"charity {charity.name} has been updated in the last {DAYS_SINCE_CHECKING} days, skipping")
+                continue
+
             logger.info(f"refreshing charity {charity.name}")
             Item.objects.filter(charity=charity).exclude(id__in=[item.id for item in items]).delete()
             loader = DatabaseLoader(charity.id)
