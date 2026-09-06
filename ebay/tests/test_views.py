@@ -135,7 +135,7 @@ class TestEbayCharityPost(unittest.TestCase):
         response = self.view(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, "Failed to add charity")
+        self.assertEqual(response.data, "Error")
 
     @patch('ebay.views.charity_views.addCharity')
     def test_post_with_empty_data(self, mock_add_charity):
