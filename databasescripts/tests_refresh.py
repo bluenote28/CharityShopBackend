@@ -1,9 +1,11 @@
+import datetime
 import unittest
 from unittest.mock import Mock, patch
 
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 from django.contrib.auth.models import User as DjangoUser
+from django.utils import timezone
 
 from databasescripts.refresh_database import deleteInactiveItems, refreshDatabase
 from databasescripts.views import RefreshDatabaseView
@@ -73,6 +75,7 @@ class TestRefreshDatabase(unittest.TestCase):
         favorite_list = Mock()
         favorite_list.items.all.return_value = [favorite_item]
         charity = Mock(id=7, name="All Goods")
+        charity.updated_at = timezone.now() - datetime.timedelta(days=8)
         loader = Mock()
         charity_items = Mock()
 
@@ -91,6 +94,26 @@ class TestRefreshDatabase(unittest.TestCase):
         charity_items.delete.assert_called_once()
         loader.load_items_to_db.assert_called_once()
         mock_update.assert_called_once_with(7)
+
+    @patch("databasescripts.refresh_database.deleteInactiveItems")
+    def test_skips_charity_updated_within_threshold(self, mock_delete_inactive):
+        charity = Mock(id=7, name="All Goods")
+        charity.updated_at = timezone.now() - datetime.timedelta(days=2)
+        loader = Mock()
+
+        with patch("ebay.models.FavoriteList") as mock_fav, \
+             patch("ebay.models.Item") as mock_item, \
+             patch("ebay.models.Charity") as mock_charity, \
+             patch("ebay.load_data_to_db.DatabaseLoader", return_value=loader), \
+             patch("databasescripts.database_actions.updateCharityUpdatedAt") as mock_update:
+            mock_fav.objects.filter.return_value = []
+            mock_charity.objects.all.return_value = [charity]
+
+            refreshDatabase(None)
+
+        mock_item.objects.filter.assert_not_called()
+        loader.load_items_to_db.assert_not_called()
+        mock_update.assert_not_called()
 
 
 class TestRefreshDatabaseView(unittest.TestCase):
