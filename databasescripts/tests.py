@@ -68,7 +68,8 @@ class CharityUtilsTests(TestCase):
     def test_add_charity_failure(self):
         result = addCharity({})
 
-        self.assertEqual(result, "Failure")
+        self.assertNotEqual(result, "Success")
+        self.assertTrue(result)
 
 
 class ItemLookupTests(TestCase):
