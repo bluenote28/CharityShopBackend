@@ -22,7 +22,7 @@ def addCharity(charity_data):
         serializer.save()
         return "Success"
     else:
-        return "Failure"
+        return serializer.errors
     
 def itemInDatabase(item_id):
 
