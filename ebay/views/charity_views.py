@@ -32,7 +32,7 @@ class EbayCharity(APIView):
             disk.delete(CHARITIES_CACHE_KEY)
             return Response("Sucesfully added charity", status=201)
         else:
-            return Response("Failed to add charity", status=400)
+            return Response(add, status=400)
 
     def delete(self, request, charity_id):
 
