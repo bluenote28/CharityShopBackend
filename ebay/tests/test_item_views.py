@@ -170,6 +170,27 @@ class TestEbayCharityItemsGet(unittest.TestCase):
         mock_filter.assert_called_once_with("Books", "hardcover")
         self.assertEqual(response.data["count"], 1)
 
+    @patch("ebay.views.item_views.ItemSerializer")
+    @patch("ebay.views.item_views.getItemsBySubCategory")
+    def test_category_query_param_allows_slash(self, mock_subcategory, mock_serializer):
+        mock_subcategory.return_value = [Mock()]
+        mock_serializer.return_value.data = [{"id": 1}]
+        category = "Computers/Tablets & Networking"
+
+        request = self.factory.get(
+            "/api/items/ebaycharityitems/category",
+            {"category": category, "page": 1},
+        )
+        with patch.object(EbayCharityItems, "paginator") as mock_paginator:
+            mock_paginator.paginate_queryset.return_value = [Mock()]
+            mock_paginator.get_paginated_response.return_value = Response(
+                {"count": 1, "results": [{"id": 1}]}
+            )
+            response = self.view(request)
+
+        mock_subcategory.assert_called_once_with(category)
+        self.assertEqual(response.data["count"], 1)
+
     def test_charity_cache_hit(self):
         cached = {"results": []}
         self.mock_disk.get.return_value = cached
