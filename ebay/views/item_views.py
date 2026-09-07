@@ -19,6 +19,10 @@ class EbayCharityItems(APIView):
     paginator.page_size = 50
 
     def get(self, request, item_id=None, search_text=None, category_id=None, filter=None, charity_id=None):
+        if category_id is None:
+            category_id = request.query_params.get('category') or None
+        if filter is None:
+            filter = request.query_params.get('filter') or None
 
         if item_id is not None:
             cache_key = f'item_{item_id}'
