@@ -1,6 +1,7 @@
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.db.models import F
 
+from databasescripts.database_actions import _filter_by_category_name
 from ebay.models import Item
 
 
@@ -14,7 +15,7 @@ def search(query, charity_id=None, category=None):
     if charity_id is not None:
         items = items.filter(charity_id=charity_id)
     if category:
-        items = items.filter(category_list__contains=[{"categoryName": category}])
+        items = _filter_by_category_name(items, category)
     return (
         items
         .annotate(rank=SearchRank(F("search_vector"), search_query))

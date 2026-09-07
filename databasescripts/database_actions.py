@@ -1,9 +1,16 @@
 from ebay.models import Charity, Item
 from ebay.serializers import CharitySerializer
 from django.contrib.postgres.search import SearchQuery
+from django.db import connection
 import logging, datetime
 
 logger = logging.getLogger(__name__)
+
+
+def _filter_by_category_name(queryset, category_name):
+    if connection.features.supports_json_field_contains:
+        return queryset.filter(category_list__contains=[{"categoryName": category_name}])
+    return queryset.filter(category_list__icontains=f'"categoryName": "{category_name}"')
 
 def deleteCharity(id):
      
@@ -96,7 +103,7 @@ def getItemsByCharity(charity_id, category=None):
     try:
         items = Item.objects.filter(charity_id=charity_id)
         if category:
-            items = items.filter(category_list__contains=[{"categoryName": category}])
+            items = _filter_by_category_name(items, category)
         return items
     except Exception as e:
         print(f'Error retrieving items by charity: {e}')
