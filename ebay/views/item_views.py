@@ -44,14 +44,20 @@ class EbayCharityItems(APIView):
 
         elif charity_id is not None:
             page = request.query_params.get('page', 1)
+            category = request.query_params.get('category') or None
 
             if search_text is not None:
                 cache_key = f'items_charity_{charity_id}_search_{search_text}_p{page}'
+                if category:
+                    cache_key = f'items_charity_{charity_id}_search_{search_text}_c_{category}_p{page}'
                 cached = disk.get(cache_key)
                 if cached is not None:
                     return Response(cached)
 
-                items = search(search_text, charity_id=charity_id)
+                if category:
+                    items = search(search_text, charity_id=charity_id, category=category)
+                else:
+                    items = search(search_text, charity_id=charity_id)
                 paginated_items = self.paginator.paginate_queryset(items, request, self)
                 serializer = ItemSerializer(paginated_items, many=True)
                 response = self.paginator.get_paginated_response(serializer.data)
@@ -59,11 +65,16 @@ class EbayCharityItems(APIView):
                 return response
 
             cache_key = f'items_charity_{charity_id}_p{page}'
+            if category:
+                cache_key = f'items_charity_{charity_id}_c_{category}_p{page}'
             cached = disk.get(cache_key)
             if cached is not None:
                 return Response(cached)
 
-            items = getItemsByCharity(charity_id)
+            if category:
+                items = getItemsByCharity(charity_id, category=category)
+            else:
+                items = getItemsByCharity(charity_id)
             paginated_items = self.paginator.paginate_queryset(items, request, self)
             serializer = ItemSerializer(paginated_items, many=True)
             response = self.paginator.get_paginated_response(serializer.data)

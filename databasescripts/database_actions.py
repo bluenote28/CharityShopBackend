@@ -92,9 +92,12 @@ def getItemsByFilter(subcategory, filter):
         print(f'Error retrieving items by filter')
         return "Failure"
 
-def getItemsByCharity(charity_id):
+def getItemsByCharity(charity_id, category=None):
     try:
-        return Item.objects.filter(charity_id=charity_id)
+        items = Item.objects.filter(charity_id=charity_id)
+        if category:
+            items = items.filter(category_list__contains=[{"categoryName": category}])
+        return items
     except Exception as e:
         print(f'Error retrieving items by charity: {e}')
         return "Failure"

@@ -4,7 +4,7 @@ from django.db.models import F
 from ebay.models import Item
 
 
-def search(query, charity_id=None):
+def search(query, charity_id=None, category=None):
     query = (query or "").strip()
     if not query:
         return Item.objects.none()
@@ -13,6 +13,8 @@ def search(query, charity_id=None):
     items = Item.objects.filter(search_vector=search_query)
     if charity_id is not None:
         items = items.filter(charity_id=charity_id)
+    if category:
+        items = items.filter(category_list__contains=[{"categoryName": category}])
     return (
         items
         .annotate(rank=SearchRank(F("search_vector"), search_query))

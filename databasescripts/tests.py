@@ -197,6 +197,12 @@ class ItemQueryTests(TestCase):
         self.assertEqual(items.count(), 2)
         self.assertTrue(all(item.charity_id == self.charity.id for item in items))
 
+    def test_get_items_by_charity_and_category(self):
+        items = getItemsByCharity(self.charity.id, category="Books")
+
+        self.assertEqual(items.count(), 1)
+        self.assertEqual(items.first().ebay_id, "ITEM2")
+
     def test_get_items_by_charity_empty(self):
         self.assertEqual(getItemsByCharity(999).count(), 0)
 
