@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from ebay.models import FavoriteList, Item, User
-from ebay.serializers import FavoriteListSerializer, CharitySerializer
+from ebay.serializers import FavoriteListSerializer
 
 class FavoriteListView(APIView):
 
@@ -11,6 +11,11 @@ class FavoriteListView(APIView):
         if value in (None, ''):
             value = request.query_params.get(field)
         return value or None
+
+    def _charity_id(self, value):
+        if isinstance(value, dict):
+            return value.get('id')
+        return value
     
     def get(self, request):
         user = User.objects.get(username=request.user)
@@ -19,17 +24,16 @@ class FavoriteListView(APIView):
         return Response(serializer.data)
     
     def post(self, request):
-        data = request.data  
         favorite_list = FavoriteList.objects.prefetch_related('items', 'charities').get(user=request.user)
+        item_id = self._favorite_field(request, 'item')
+        charity_id = self._charity_id(self._favorite_field(request, 'charity'))
 
-        if data['item'] != "":
-            item = Item.objects.get(ebay_id=data['item'])
+        if item_id:
+            item = Item.objects.get(ebay_id=item_id)
             favorite_list.items.add(item)
 
-        if data['charity']!= "":
-            charity_serializer = CharitySerializer(data=data['charity'])
-            if charity_serializer.is_valid():
-                favorite_list.charities.add(data['charity'])
+        if charity_id:
+            favorite_list.charities.add(charity_id)
 
         favorite_list.save()
         serializer = FavoriteListSerializer(favorite_list, many=False)
