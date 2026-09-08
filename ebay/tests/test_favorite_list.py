@@ -71,36 +71,32 @@ class TestFavoriteListPost(unittest.TestCase):
         favorite_list.save.assert_called_once()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch("ebay.views.favorite_list.CharitySerializer")
     @patch("ebay.views.favorite_list.FavoriteListSerializer")
     @patch("ebay.views.favorite_list.FavoriteList")
-    def test_post_adds_valid_charity(self, mock_favorite_list_model, mock_serializer, mock_charity_serializer):
+    def test_post_adds_valid_charity(self, mock_favorite_list_model, mock_serializer):
         favorite_list = self._mock_favorite_list(mock_favorite_list_model)
-        mock_charity_serializer.return_value.is_valid.return_value = True
         mock_serializer.return_value.data = {"charities": [1]}
 
         request = self.factory.post(
             "/api/favorites/",
-            {"item": "", "charity": {"id": 1, "name": "Good Cause"}},
+            {"item": "", "charity": "1"},
             format="json",
         )
         force_authenticate(request, user=self.user)
         response = self.view(request)
 
-        favorite_list.charities.add.assert_called_once()
+        favorite_list.charities.add.assert_called_once_with("1")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch("ebay.views.favorite_list.CharitySerializer")
     @patch("ebay.views.favorite_list.FavoriteListSerializer")
     @patch("ebay.views.favorite_list.FavoriteList")
-    def test_post_ignores_invalid_charity(self, mock_favorite_list_model, mock_serializer, mock_charity_serializer):
+    def test_post_ignores_empty_charity(self, mock_favorite_list_model, mock_serializer):
         favorite_list = self._mock_favorite_list(mock_favorite_list_model)
-        mock_charity_serializer.return_value.is_valid.return_value = False
         mock_serializer.return_value.data = {"charities": []}
 
         request = self.factory.post(
             "/api/favorites/",
-            {"item": "", "charity": {"name": "Incomplete"}},
+            {"item": "", "charity": ""},
             format="json",
         )
         force_authenticate(request, user=self.user)
