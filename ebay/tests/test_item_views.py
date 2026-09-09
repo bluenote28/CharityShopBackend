@@ -167,7 +167,27 @@ class TestEbayCharityItemsGet(unittest.TestCase):
             )
             response = self.view(request, category_id="Books", filter="hardcover")
 
-        mock_filter.assert_called_once_with("Books", "hardcover")
+        mock_filter.assert_called_once_with("Books", "hardcover", None)
+        self.assertEqual(response.data["count"], 1)
+
+    @patch("ebay.views.item_views.ItemSerializer")
+    @patch("ebay.views.item_views.getItemsByFilter")
+    def test_category_with_search_query_param(self, mock_filter, mock_serializer):
+        mock_filter.return_value = [Mock()]
+        mock_serializer.return_value.data = [{"id": 1}]
+
+        request = self.factory.get(
+            "/api/items/ebaycharityitems/category",
+            {"category": "Activewear", "search": "pants", "page": 1},
+        )
+        with patch.object(EbayCharityItems, "paginator") as mock_paginator:
+            mock_paginator.paginate_queryset.return_value = [Mock()]
+            mock_paginator.get_paginated_response.return_value = Response(
+                {"count": 1, "results": [{"id": 1}]}
+            )
+            response = self.view(request)
+
+        mock_filter.assert_called_once_with("Activewear", None, "pants")
         self.assertEqual(response.data["count"], 1)
 
     @patch("ebay.views.item_views.ItemSerializer")
