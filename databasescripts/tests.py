@@ -161,7 +161,7 @@ class ItemQueryTests(TestCase):
         mock_query.return_value = "query-object"
         mock_filter.return_value.filter.return_value = [self.item2]
 
-        items = getItemsByFilter("Books", "ITEM")
+        items = getItemsByFilter("Books", search="ITEM")
 
         mock_filter.assert_called_once_with(category_list__contains=[{"categoryName": "Books"}])
         mock_query.assert_called_once_with("ITEM", search_type="plain", config="english")
@@ -173,7 +173,7 @@ class ItemQueryTests(TestCase):
     def test_get_items_by_filter_skips_blank_query(self, mock_filter, mock_query):
         mock_filter.return_value = [self.item2]
 
-        items = getItemsByFilter("Books", "  ")
+        items = getItemsByFilter("Books", search="  ")
 
         mock_query.assert_not_called()
         self.assertEqual(items, [self.item2])
