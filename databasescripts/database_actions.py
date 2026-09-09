@@ -86,10 +86,12 @@ def getItemsBySubCategory(subcategory):
         print(f'Error retrieving items by sub category')
         return "Failure"
 
-def getItemsByFilter(subcategory, filter):
+def getItemsByFilter(subcategory, filter=None, search=None):
     try:
          items = Item.objects.filter(category_list__contains=[{"categoryName": subcategory}])
-         query = (filter or "").strip()
+         if filter:
+             items = items.filter(category_list__contains=[{"categoryName": filter}])
+         query = (search or "").strip()
          if query:
              items = items.filter(
                  search_vector=SearchQuery(query, search_type="plain", config="english")
