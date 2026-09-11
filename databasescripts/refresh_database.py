@@ -56,7 +56,11 @@ def refreshDatabase(charity_id=None):
 
         deleteInactiveItems(items)
 
+        count = 0
         for charity in Charity.objects.all():
+            if count > 24:
+                break
+            count += 1
             if timezone.now() - charity.updated_at < datetime.timedelta(days=DAYS_SINCE_CHECKING):
                 logger.info(f"charity {charity.name} has been updated in the last {DAYS_SINCE_CHECKING} days, skipping")
                 continue
@@ -84,7 +88,8 @@ def refreshDatabase(charity_id=None):
         updateCharityUpdatedAt(charity_id)
 
 
-    
+if __name__ == "__main__":
+    refreshDatabase()
 
 
 
