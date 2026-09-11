@@ -165,3 +165,31 @@ class TestRefreshDatabaseView(unittest.TestCase):
         request = self.factory.get("/api/refresh_items/")
         response = self.view(request)
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+
+class TestRefreshDatabaseCommand(unittest.TestCase):
+
+    @patch("databasescripts.management.commands.refresh_database.disk")
+    @patch("databasescripts.management.commands.refresh_database.Queue")
+    @patch("databasescripts.management.commands.refresh_database.get_redis")
+    @patch("databasescripts.management.commands.refresh_database.close_old_connections")
+    def test_enqueues_full_refresh(self, mock_close, mock_redis, mock_queue, mock_disk):
+        from django.core.management import call_command
+
+        queue = Mock()
+        mock_queue.return_value = queue
+
+        call_command("refresh_database")
+
+        queue.enqueue.assert_called_once()
+        self.assertEqual(queue.enqueue.call_args.args[0], refreshDatabase)
+        mock_disk.clear.assert_called_once()
+
+    @patch("databasescripts.management.commands.refresh_database.refreshDatabase")
+    @patch("databasescripts.management.commands.refresh_database.close_old_connections")
+    def test_now_runs_in_process(self, mock_close, mock_refresh):
+        from django.core.management import call_command
+
+        call_command("refresh_database", now=True, charity_id=42)
+
+        mock_refresh.assert_called_once_with(42)
