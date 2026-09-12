@@ -64,3 +64,20 @@ class TestSearch(unittest.TestCase):
         mock_item.objects.filter.assert_called_once_with(search_vector="query-object")
         queryset.filter.assert_called_once_with(charity_id=123)
         self.assertEqual(result, "hits")
+
+    @patch("ebay.search.SearchRank")
+    @patch("ebay.search.SearchQuery")
+    @patch("ebay.search.Item")
+    def test_filters_by_charity_ids(self, mock_item, mock_query, mock_rank):
+        mock_query.return_value = "query-object"
+        mock_rank.return_value = "rank-expr"
+        queryset = MagicMock()
+        filtered = MagicMock()
+        mock_item.objects.filter.return_value = queryset
+        queryset.filter.return_value = filtered
+        filtered.annotate.return_value.order_by.return_value = "hits"
+
+        result = search("lamp", charity_ids=[12, 34])
+
+        queryset.filter.assert_called_once_with(charity_id__in=[12, 34])
+        self.assertEqual(result, "hits")
