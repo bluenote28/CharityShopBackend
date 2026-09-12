@@ -14,7 +14,8 @@ from ebay.views.user_views import (
     GetUsers,
     RegisterUser,
     MyTokenObtainPairSerializer,
-    MyTokenObtainPairView
+    MyTokenObtainPairView,
+    GoogleLogin
 )
 
 class TestEbayCharityGet(unittest.TestCase):
@@ -1698,6 +1699,91 @@ class TestRegisterUserCreateFavoriteList(unittest.TestCase):
             view.createFavoriteList(user_id=user_id)
 
             mock_favorite_list.objects.create.assert_called_once_with(user_id=user_id)
+
+
+class TestGoogleLogin(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = GoogleLogin.as_view()
+
+    @patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'})
+    def test_get_returns_client_id(self):
+        request = self.factory.get('/api/users/google/')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {'client_id': 'test-client-id'})
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_get_returns_503_when_unconfigured(self):
+        request = self.factory.get('/api/users/google/')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'})
+    def test_post_missing_credential(self):
+        request = self.factory.post('/api/users/google/', {}, format='json')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'})
+    @patch('ebay.views.user_views.id_token.verify_oauth2_token', side_effect=ValueError('bad token'))
+    def test_post_invalid_token(self, mock_verify):
+        request = self.factory.post('/api/users/google/', {'credential': 'bad'}, format='json')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['detail'], 'Invalid Google token')
+
+    @patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'})
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.FavoriteList')
+    @patch('ebay.views.user_views.User')
+    @patch('ebay.views.user_views.id_token.verify_oauth2_token')
+    def test_post_creates_new_user(self, mock_verify, mock_user_model, mock_favorite_list, mock_serializer):
+        mock_verify.return_value = {
+            'email': 'ada@example.com',
+            'email_verified': True,
+            'given_name': 'Ada',
+            'family_name': 'Lovelace',
+        }
+        mock_user_model.objects.filter.return_value.first.return_value = None
+        created_user = Mock(id=7)
+        mock_user_model.return_value = created_user
+        mock_serializer.return_value.data = {'email': 'ada@example.com', 'token': 'jwt'}
+
+        request = self.factory.post('/api/users/google/', {'credential': 'good'}, format='json')
+        response = self.view(request)
+
+        created_user.set_unusable_password.assert_called_once()
+        created_user.save.assert_called_once()
+        mock_favorite_list.objects.get_or_create.assert_called_once_with(user_id=7)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['token'], 'jwt')
+
+    @patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'})
+    @patch('ebay.views.user_views.UserSerializerWithToken')
+    @patch('ebay.views.user_views.User')
+    @patch('ebay.views.user_views.id_token.verify_oauth2_token')
+    def test_post_logs_in_existing_user(self, mock_verify, mock_user_model, mock_serializer):
+        mock_verify.return_value = {
+            'email': 'ada@example.com',
+            'email_verified': True,
+            'given_name': 'Ada',
+            'family_name': 'Lovelace',
+        }
+        existing = Mock(id=7, first_name='Ada', last_name='Lovelace')
+        mock_user_model.objects.filter.return_value.first.return_value = existing
+        mock_serializer.return_value.data = {'email': 'ada@example.com', 'token': 'jwt'}
+
+        request = self.factory.post('/api/users/google/', {'credential': 'good'}, format='json')
+        response = self.view(request)
+
+        existing.set_unusable_password.assert_not_called()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class TestMyTokenObtainPairSerializer(unittest.TestCase):
