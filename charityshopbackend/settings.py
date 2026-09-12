@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     'databasescripts.apps.DatabasescriptsConfig',
     'aiassistant.apps.AiassistantConfig',
-    'django.contrib.postgres'
+    'django.contrib.postgres',
+    'allauth.socialaccount.providers.google',
 ]
 
 REST_FRAMEWORK = {
