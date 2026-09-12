@@ -5,7 +5,7 @@ from databasescripts.database_actions import _filter_by_category_name
 from ebay.models import Item
 
 
-def search(query, charity_id=None, category=None):
+def search(query, charity_id=None, category=None, charity_ids=None):
     query = (query or "").strip()
     if not query:
         return Item.objects.none()
@@ -14,6 +14,8 @@ def search(query, charity_id=None, category=None):
     items = Item.objects.filter(search_vector=search_query)
     if charity_id is not None:
         items = items.filter(charity_id=charity_id)
+    elif charity_ids:
+        items = items.filter(charity_id__in=charity_ids)
     if category:
         items = _filter_by_category_name(items, category)
     return (
