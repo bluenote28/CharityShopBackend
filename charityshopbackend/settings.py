@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'databasescripts.apps.DatabasescriptsConfig',
     'aiassistant.apps.AiassistantConfig',
     'django.contrib.postgres',
+    'allauth',
+    'allauth.account',
     'allauth.socialaccount.providers.google',
 ]
 
@@ -106,8 +108,24 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware'
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "allauth.account.middleware.AccountMiddleware"
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ.get("GOOGLE_CLIENT_ID"),
+            'secret': os.environ.get("GOOGLE_SECRET"),
+            'key': ''
+        }
+    }
+}
 
 ROOT_URLCONF = 'charityshopbackend.urls'
 
@@ -121,6 +139,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request'
             ],
         },
     },
