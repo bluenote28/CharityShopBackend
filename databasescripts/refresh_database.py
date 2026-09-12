@@ -60,11 +60,10 @@ def refreshDatabase(charity_id=None):
         for charity in Charity.objects.all():
             if count > 24:
                 break
-            count += 1
             if timezone.now() - charity.updated_at < datetime.timedelta(days=DAYS_SINCE_CHECKING):
                 logger.info(f"charity {charity.name} has been updated in the last {DAYS_SINCE_CHECKING} days, skipping")
                 continue
-
+            count += 1
             logger.info(f"refreshing charity {charity.name}")
             Item.objects.filter(charity=charity).exclude(id__in=[item.id for item in items]).delete()
             loader = DatabaseLoader(charity.id)
