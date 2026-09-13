@@ -1,5 +1,5 @@
 from django.urls import path, register_converter
-from ebay.views.item_views import EbayCharityItems
+from ebay.views.item_views import CharityItemCategories, EbayCharityItems
 
 class CategoryWithSlashConverter:
     regex = "[a-zA-ZÀ-ÿ,&(): /'-]+"
@@ -13,6 +13,7 @@ class CategoryWithSlashConverter:
 register_converter(CategoryWithSlashConverter, "cat")
 
 urlpatterns = [
+    path('ebaycharityitems/charity/<int:charity_id>/categories', CharityItemCategories.as_view()),
     path('ebaycharityitems/charity/<int:charity_id>/search/<str:search_text>', EbayCharityItems.as_view()),
     path('ebaycharityitems/charity/<int:charity_id>', EbayCharityItems.as_view()),
     path('ebaycharityitems/search/<str:search_text>', EbayCharityItems.as_view()),
