@@ -111,6 +111,17 @@ def getItemsByCharity(charity_id, category=None):
         print(f'Error retrieving items by charity: {e}')
         return "Failure"
 
+def getCategoriesForCharity(charity_id):
+    return list(
+        Item.objects.filter(charity_id=charity_id)
+        .exclude(category__isnull=True)
+        .exclude(category='')
+        .order_by('category')
+        .values_list('category', flat=True)
+        .distinct()
+    )
+
+
 def updateCharityUpdatedAt(charity_id):
     current_date = datetime.date.today()
     charity = Charity.objects.get(id=charity_id)

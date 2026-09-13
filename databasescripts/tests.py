@@ -11,6 +11,7 @@ from .database_actions import (
     getItemsByCharity,
     getItemsByFilter,
     getItemsBySubCategory,
+    getCategoriesForCharity,
     itemInDatabase,
     retrieveItem,
     updateCharityUpdatedAt,
@@ -209,6 +210,26 @@ class ItemQueryTests(TestCase):
     @patch("databasescripts.database_actions.Item.objects.filter", side_effect=Exception("db down"))
     def test_get_items_by_charity_error(self, mock_filter):
         self.assertEqual(getItemsByCharity(1234), "Failure")
+
+    def test_get_categories_for_charity(self):
+        charity = Charity.objects.create(
+            id=9012,
+            name="Category Charity",
+            description="category charity",
+            donation_url="https://category.com",
+            image_url="https://category.com/pic.png",
+        )
+        _create_item(charity, "CAT1", category="Books & Magazines", category_name="Books")
+        _create_item(charity, "CAT2", category="Books & Magazines", category_name="Textbooks")
+        _create_item(charity, "CAT3", category="Collectibles", category_name="Coins")
+        _create_item(self.charity, "CAT4", category="Electronics", category_name="TVs")
+
+        categories = getCategoriesForCharity(charity.id)
+
+        self.assertEqual(categories, ["Books & Magazines", "Collectibles"])
+
+    def test_get_categories_for_charity_empty(self):
+        self.assertEqual(getCategoriesForCharity(999), [])
 
 
 class ItemDeleteTests(TestCase):
