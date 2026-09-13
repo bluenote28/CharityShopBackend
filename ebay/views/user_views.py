@@ -4,16 +4,42 @@ from rest_framework.views import APIView
 from ebay.serializers import UserSerializer, UserSerializerWithToken
 from ebay.models import FavoriteList
 from django.contrib.auth.models import User
-from ebay.serializers import FavoriteListSerializer
-from django.db import IntegrityError
-import smtplib
 import os
+import logging
 from rest_framework import status
-from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
 from google.oauth2 import id_token
+from google.auth import exceptions as google_exceptions
 from google.auth.transport import requests as google_requests
+
+logger = logging.getLogger(__name__)
+
+def _google_token_audiences(aud):
+    if isinstance(aud, str):
+        return {aud}
+    if isinstance(aud, (list, tuple)):
+        return {item for item in aud if isinstance(item, str)}
+    return set()
+
+def _verify_google_id_token(credential, client_id):
+    request = google_requests.Request()
+    try:
+        return id_token.verify_oauth2_token(
+            credential,
+            request,
+            audience=client_id,
+            clock_skew_in_seconds=60,
+        )
+    except ValueError as exc:
+        if 'wrong audience' not in str(exc).lower():
+            raise
+        idinfo = id_token.verify_oauth2_token(
+            credential,
+            request,
+            clock_skew_in_seconds=60,
+        )
+        if client_id not in _google_token_audiences(idinfo.get('aud')):
+            raise
+        return idinfo
 
 class GetUserProfile(APIView):
     permission_classes = [IsAuthenticated]
@@ -32,9 +58,6 @@ class GetUserProfile(APIView):
         user.username = data['email']
         user.email = data['email']
 
-        if data['password'] != '':
-            user.password = make_password(data['password'])
-
         user.save()
 
         serializer = UserSerializerWithToken(user, many=False)
@@ -52,9 +75,6 @@ class UpdateUserProfile(APIView):
         user.username = data['email']
         user.email = data['email']
 
-        if data['password'] != '':
-            user.password = make_password(data['password'])
-
         user.save()
 
         serializer = UserSerializerWithToken(user, many=False)
@@ -67,59 +87,6 @@ class GetUsers(APIView):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
-class RegisterUser(APIView):
-    
-    def createFavoriteList(self, user_id):
-        favorite_list = FavoriteList.objects.create(user_id=user_id)
-        favorite_list.items.clear()
-        favorite_list.charities.clear()
-        favorite_list.save()
-    
-    def post(self, request):
-        
-        try: 
-            user = User.objects.create_user(
-                username=request.data['email'],
-                email=request.data['email'],
-                password=request.data['password'],
-                first_name=request.data['first_name'],
-                last_name=request.data['last_name']
-            )
-        except smtplib.SMTPAuthenticationError:
-            message = {'detail': 'Account Created. Redirect Failed. Please login from the login screen'}
-            created_user = User.objects.filter(email=request.data.get('email')).first()
-            if created_user:
-                self.createFavoriteList(created_user.id)
-            return Response(message, status=status.HTTP_400_BAD_REQUEST)
-        
-        except IntegrityError:
-            message = {'detail': 'User already exists'}
-            return Response(message, status=status.HTTP_400_BAD_REQUEST)
-        
-        except Exception as e:
-            message = {'detail': e}
-            return Response(message, status=status.HTTP_400_BAD_REQUEST)
-              
-        self.createFavoriteList(user.id)
-
-        serializer = UserSerializerWithToken(user, many=False)
-        return Response(serializer.data)
-
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-
-        serializer = UserSerializerWithToken(self.user).data
-
-        for k, v in serializer.items():
-            data[k] = v
-      
-        return data
-    
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
-
-
 class GoogleLogin(APIView):
 
     def get(self, request):
@@ -130,20 +97,17 @@ class GoogleLogin(APIView):
 
     def post(self, request):
         credential = request.data.get('credential')
-        client_id = os.environ.get("GOOGLE_CLIENT_ID")
+        client_id = (os.environ.get("GOOGLE_CLIENT_ID") or '').strip().strip('"').strip("'")
         if not client_id:
             return Response({'detail': 'Google login is not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        if not credential:
+        if not credential or not isinstance(credential, str):
             return Response({'detail': 'Missing Google credential'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            idinfo = id_token.verify_oauth2_token(
-                credential,
-                google_requests.Request(),
-                client_id,
-            )
-        except ValueError:
-            return Response({'detail': 'Invalid Google token'}, status=status.HTTP_400_BAD_REQUEST)
+            idinfo = _verify_google_id_token(credential.strip(), client_id)
+        except (ValueError, google_exceptions.GoogleAuthError) as exc:
+            logger.warning('Google token verification failed: %s', exc)
+            return Response({'detail': f'Invalid Google token: {exc}'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not idinfo.get('email_verified'):
             return Response({'detail': 'Google email is not verified'}, status=status.HTTP_400_BAD_REQUEST)
