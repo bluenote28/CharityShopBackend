@@ -32,6 +32,7 @@ class Item(models.Model):
     condition = models.CharField(max_length=30, null=True)
     seller = models.JSONField(null=True)
     seller_description = models.TextField(null=True)
+    ai_description = models.TextField(null=True)
     donation_percentage = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
     search_vector = GeneratedField(
         expression=(
