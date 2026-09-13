@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from ebay.models import Item
 from ebay.serializers import ItemSerializer
-from databasescripts.database_actions import retrieveItem, getItemsBySubCategory, getItemsByFilter, getItemsByCharity
+from databasescripts.database_actions import retrieveItem, getItemsBySubCategory, getItemsByFilter, getItemsByCharity, getCategoriesForCharity
 from rest_framework.pagination import PageNumberPagination
 from django.core.cache import caches
 from ebay.search import search
@@ -165,3 +165,16 @@ class EbayCharityItems(APIView):
 
         else:
             return Response("Please provide an item_id, search_text, category_id, or charity_id", status=400)
+
+
+class CharityItemCategories(APIView):
+
+    def get(self, request, charity_id):
+        cache_key = f'items_charity_{charity_id}_categories'
+        cached = disk.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        data = {'categories': getCategoriesForCharity(charity_id)}
+        disk.set(cache_key, data, ITEM_CATEGORY_TTL)
+        return Response(data)
