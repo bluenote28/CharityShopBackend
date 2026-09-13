@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory
 
-from ebay.views.item_views import EbayCharityItems
+from ebay.views.item_views import CharityItemCategories, EbayCharityItems
 
 
 class TestEbayCharityItemsGet(unittest.TestCase):
@@ -305,3 +305,40 @@ class TestEbayCharityItemsGet(unittest.TestCase):
 
         mock_search.assert_called_once_with("lamp", charity_id=123)
         self.assertEqual(response.data["count"], 1)
+
+
+class TestCharityItemCategories(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = CharityItemCategories.as_view()
+        self.disk_patcher = patch("ebay.views.item_views.disk")
+        self.mock_disk = self.disk_patcher.start()
+        self.mock_disk.get.return_value = None
+
+    def tearDown(self):
+        self.disk_patcher.stop()
+
+    def test_cache_hit(self):
+        cached = {"categories": ["Books & Magazines"]}
+        self.mock_disk.get.return_value = cached
+
+        request = self.factory.get("/api/items/ebaycharityitems/charity/123/categories")
+        response = self.view(request, charity_id=123)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, cached)
+        self.mock_disk.get.assert_called_once_with("items_charity_123_categories")
+
+    @patch("ebay.views.item_views.getCategoriesForCharity", return_value=["Collectibles", "Toys & Hobbies"])
+    def test_returns_distinct_categories(self, mock_categories):
+        request = self.factory.get("/api/items/ebaycharityitems/charity/123/categories")
+        response = self.view(request, charity_id=123)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {"categories": ["Collectibles", "Toys & Hobbies"]},
+        )
+        mock_categories.assert_called_once_with(123)
+        self.mock_disk.set.assert_called_once()
