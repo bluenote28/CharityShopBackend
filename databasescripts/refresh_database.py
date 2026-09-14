@@ -1,11 +1,12 @@
 import logging
 import datetime
+from django.core.cache import caches
 
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 DAYS_SINCE_CHECKING = 7
-
+disk = caches['diskcache']
 
 def deleteInactiveItems(items):
     from ebay.models import Item
@@ -69,6 +70,7 @@ def refreshDatabase(charity_id=None):
             loader = DatabaseLoader(charity.id)
             loader.load_items_to_db()
             updateCharityUpdatedAt(charity.id)
+        disk.clear()
 
     else:
 
@@ -85,6 +87,7 @@ def refreshDatabase(charity_id=None):
         loader = DatabaseLoader(charity_id)
         loader.load_items_to_db()
         updateCharityUpdatedAt(charity_id)
+        disk.clear()
 
 
 if __name__ == "__main__":
