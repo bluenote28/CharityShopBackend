@@ -1,4 +1,6 @@
+import logging
 import requests
+from django.core.cache import caches
 from ebay.models import Item
 import os
 
@@ -126,5 +128,6 @@ def get_item_description(item_link, item_name=None, ebay_id=None):
     item = Item.objects.get(ebay_id=ebay_id)
     item.ai_description = content
     item.save()
+    caches['diskcache'].delete(f'item_{ebay_id}')
 
     return {'description': content}
