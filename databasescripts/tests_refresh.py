@@ -45,8 +45,9 @@ class TestDeleteInactiveItems(unittest.TestCase):
 
 class TestRefreshDatabase(unittest.TestCase):
 
+    @patch("databasescripts.refresh_database.disk")
     @patch("databasescripts.refresh_database.deleteInactiveItems")
-    def test_refreshes_single_charity(self, mock_delete_inactive):
+    def test_refreshes_single_charity(self, mock_delete_inactive, mock_disk):
         favorite_item = Mock(id=9)
         favorite_list = Mock()
         favorite_list.items.all.return_value = [favorite_item]
@@ -68,9 +69,11 @@ class TestRefreshDatabase(unittest.TestCase):
         charity_items.delete.assert_called_once()
         loader.load_items_to_db.assert_called_once()
         mock_update.assert_called_once_with(42)
+        mock_disk.clear.assert_called_once()
 
+    @patch("databasescripts.refresh_database.disk")
     @patch("databasescripts.refresh_database.deleteInactiveItems")
-    def test_refreshes_all_charities_when_id_is_none(self, mock_delete_inactive):
+    def test_refreshes_all_charities_when_id_is_none(self, mock_delete_inactive, mock_disk):
         favorite_item = Mock(id=3)
         favorite_list = Mock()
         favorite_list.items.all.return_value = [favorite_item]
@@ -94,9 +97,11 @@ class TestRefreshDatabase(unittest.TestCase):
         charity_items.delete.assert_called_once()
         loader.load_items_to_db.assert_called_once()
         mock_update.assert_called_once_with(7)
+        mock_disk.clear.assert_called_once()
 
+    @patch("databasescripts.refresh_database.disk")
     @patch("databasescripts.refresh_database.deleteInactiveItems")
-    def test_skips_charity_updated_within_threshold(self, mock_delete_inactive):
+    def test_skips_charity_updated_within_threshold(self, mock_delete_inactive, mock_disk):
         charity = Mock(id=7, name="All Goods")
         charity.updated_at = timezone.now() - datetime.timedelta(days=2)
         loader = Mock()
@@ -114,6 +119,36 @@ class TestRefreshDatabase(unittest.TestCase):
         mock_item.objects.filter.assert_not_called()
         loader.load_items_to_db.assert_not_called()
         mock_update.assert_not_called()
+        mock_disk.clear.assert_called_once()
+
+    @patch("databasescripts.refresh_database.disk")
+    @patch("databasescripts.refresh_database.deleteInactiveItems")
+    def test_skipped_charities_do_not_count_toward_refresh_limit(self, mock_delete_inactive, mock_disk):
+        skipped = []
+        for index in range(25):
+            charity = Mock(id=index, name=f"Recent {index}")
+            charity.updated_at = timezone.now() - datetime.timedelta(days=1)
+            skipped.append(charity)
+
+        stale = Mock(id=99, name="Stale")
+        stale.updated_at = timezone.now() - datetime.timedelta(days=8)
+        loader = Mock()
+        charity_items = Mock()
+
+        with patch("ebay.models.FavoriteList") as mock_fav, \
+             patch("ebay.models.Item") as mock_item, \
+             patch("ebay.models.Charity") as mock_charity, \
+             patch("ebay.load_data_to_db.DatabaseLoader", return_value=loader), \
+             patch("databasescripts.database_actions.updateCharityUpdatedAt") as mock_update:
+            mock_fav.objects.filter.return_value = []
+            mock_charity.objects.all.return_value = skipped + [stale]
+            mock_item.objects.filter.return_value.exclude.return_value = charity_items
+
+            refreshDatabase(None)
+
+        loader.load_items_to_db.assert_called_once()
+        mock_update.assert_called_once_with(99)
+        mock_disk.clear.assert_called_once()
 
 
 class TestRefreshDatabaseView(unittest.TestCase):
@@ -125,11 +160,10 @@ class TestRefreshDatabaseView(unittest.TestCase):
         self.admin.is_authenticated = True
         self.admin.is_staff = True
 
-    @patch("databasescripts.views.disk")
     @patch("databasescripts.views.Queue")
     @patch("databasescripts.views.get_redis")
     @patch("databasescripts.views.close_old_connections")
-    def test_post_enqueues_refresh_for_charity(self, mock_close, mock_redis, mock_queue, mock_disk):
+    def test_post_enqueues_refresh_for_charity(self, mock_close, mock_redis, mock_queue):
         queue = Mock()
         mock_queue.return_value = queue
 
@@ -142,13 +176,11 @@ class TestRefreshDatabaseView(unittest.TestCase):
         queue.enqueue.assert_called_once()
         self.assertEqual(queue.enqueue.call_args.args[0], refreshDatabase)
         self.assertEqual(queue.enqueue.call_args.args[1], 5)
-        mock_disk.clear.assert_called_once()
 
-    @patch("databasescripts.views.disk")
     @patch("databasescripts.views.Queue")
     @patch("databasescripts.views.get_redis")
     @patch("databasescripts.views.close_old_connections")
-    def test_get_enqueues_full_refresh(self, mock_close, mock_redis, mock_queue, mock_disk):
+    def test_get_enqueues_full_refresh(self, mock_close, mock_redis, mock_queue):
         queue = Mock()
         mock_queue.return_value = queue
 
@@ -159,7 +191,6 @@ class TestRefreshDatabaseView(unittest.TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         queue.enqueue.assert_called_once()
         self.assertEqual(queue.enqueue.call_args.args[0], refreshDatabase)
-        mock_disk.clear.assert_called_once()
 
     def test_unauthenticated_is_rejected(self):
         request = self.factory.get("/api/refresh_items/")
