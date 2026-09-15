@@ -73,7 +73,7 @@ def deleteItemFromDatabase(item_id):
 
         return "Success"
     except Exception as e:
-        print(f"Error deleting item from database: {e}")
+        logger.error(f"Error deleting item from database: {e}")
         return "Failure"
     
 def getItemsBySubCategory(subcategory):

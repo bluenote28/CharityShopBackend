@@ -22,15 +22,19 @@ def deleteInactiveItems(items):
         for item in items:
 
             item_is_active = client.isItemActive(item.ebay_id)
+            logger.info(f"Processing item: {item.ebay_id}")
 
             if item_is_active == True:
                 count += 1
+                logger.info(f"Item {item.ebay_id} is active")
             elif item_is_active == "error":
                 deleteItemFromDatabase(item.ebay_id)
                 count += 1
                 deleted += 1
+                logger.info(f"Item {item.ebay_id} is deleted")
             else:
                 deleteItemFromDatabase(item.ebay_id)
+                logger.info(f"Item {item.ebay_id} is deleted")
                 count += 1
                 deleted += 1
 
@@ -76,6 +80,7 @@ def refreshDatabase(charity_id=None):
 
         favoriteLists = FavoriteList.objects.filter(items__isnull=False, items__charity=charity_id)
         items = set()
+        print(f"favoriteLists: {items}")
         for favoriteList in favoriteLists:
             for item in favoriteList.items.all():
                 items.add(item)
