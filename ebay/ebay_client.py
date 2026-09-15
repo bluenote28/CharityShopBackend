@@ -2,6 +2,7 @@ from .oauthclient.oauth2api import oauth2api
 from .oauthclient.credentialutil import credentialutil
 from .oauthclient.model.model import environment
 import os, requests, yaml, logging
+from urllib.parse import quote
 from yaml import dump
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,8 @@ class EbayClient():
             
         def isItemActive(self, item_id):
                try:
-                   response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{item_id}', headers={"Authorization": f'Bearer {self.token}'})
+                   encoded_id = quote(str(item_id), safe='')
+                   response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{encoded_id}', headers={"Authorization": f'Bearer {self.token}'})
                    data = response.json()
                    
                    item_status = data['estimatedAvailabilities'][0]['estimatedAvailabilityStatus']

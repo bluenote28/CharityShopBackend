@@ -67,8 +67,10 @@ def getItemsByCategory(category_id):
 def deleteItemFromDatabase(item_id):
 
     try:
-        item = retrieveItem(item_id)
-        item.delete()
+        deleted, _ = Item.objects.filter(ebay_id=item_id).delete()
+        if not deleted:
+            logger.error(f"Error deleting item from database: no rows for {item_id}")
+            return "Failure"
         logger.info(f"Deleted {item_id} from the database")
 
         return "Success"
