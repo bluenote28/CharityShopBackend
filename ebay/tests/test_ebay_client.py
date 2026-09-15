@@ -324,7 +324,7 @@ class TestIsItemActive(unittest.TestCase):
         client.isItemActive("v1|123456|0")
         
         mock_get.assert_called_once_with(
-            "https://api.ebay.com/buy/browse/v1/item/v1|123456|0",
+            "https://api.ebay.com/buy/browse/v1/item/v1%7C123456%7C0",
             headers={"Authorization": "Bearer test_token"}
         )
 

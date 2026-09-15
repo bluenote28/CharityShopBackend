@@ -253,6 +253,14 @@ class ItemDeleteTests(TestCase):
     def test_delete_item_not_found(self):
         self.assertEqual(deleteItemFromDatabase("MISSING"), "Failure")
 
+    def test_delete_item_deletes_all_rows_with_that_ebay_id(self):
+        _create_item(self.charity, "DELETE_ME", category_name="Misc")
+
+        result = deleteItemFromDatabase("DELETE_ME")
+
+        self.assertEqual(result, "Success")
+        self.assertEqual(Item.objects.filter(ebay_id="DELETE_ME").count(), 0)
+
 
 class UpdateCharityUpdatedAtTests(TestCase):
 
