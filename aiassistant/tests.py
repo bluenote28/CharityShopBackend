@@ -29,6 +29,9 @@ class TestGetItemDescription(unittest.TestCase):
         mock_items.filter.assert_called_with(ebay_id="123")
         prompt = mock_post.call_args.kwargs["json"]["messages"][1]["content"]
         self.assertIn("eBay item ID: 123", prompt)
+        payload = mock_post.call_args.kwargs["json"]
+        self.assertNotIn("thinking", payload)
+        self.assertEqual(payload["max_completion_tokens"], 1024)
 
     @patch("aiassistant.ai_client.Item.objects")
     @patch("aiassistant.ai_client.requests.post")
