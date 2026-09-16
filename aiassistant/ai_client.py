@@ -103,7 +103,6 @@ def get_item_description(item_link, item_name=None, ebay_id=None):
                 ],
                 "max_completion_tokens": 1024,
                 "temperature": 0.3,
-                "thinking": "off",
             },
             timeout=60,
         )
