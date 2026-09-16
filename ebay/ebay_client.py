@@ -1,6 +1,6 @@
-from ebay.oauthclient.oauth2api import oauth2api
-from ebay.oauthclient.credentialutil import credentialutil
-from ebay.oauthclient.model.model import environment
+from .oauthclient.oauth2api import oauth2api
+from .oauthclient.credentialutil import credentialutil
+from .oauthclient.model.model import environment
 import os, requests, yaml, logging
 from urllib.parse import quote
 from yaml import dump
