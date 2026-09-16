@@ -1,6 +1,6 @@
-from .oauthclient.oauth2api import oauth2api
-from .oauthclient.credentialutil import credentialutil
-from .oauthclient.model.model import environment
+from ebay.oauthclient.oauth2api import oauth2api
+from ebay.oauthclient.credentialutil import credentialutil
+from ebay.oauthclient.model.model import environment
 import os, requests, yaml, logging
 from urllib.parse import quote
 from yaml import dump
@@ -62,13 +62,11 @@ class EbayClient():
                    encoded_id = quote(str(item_id), safe='')
                    response = requests.get(f'https://api.ebay.com/buy/browse/v1/item/{encoded_id}', headers={"Authorization": f'Bearer {self.token}'})
                    data = response.json()
-                   
-                   item_status = data['estimatedAvailabilities'][0]['estimatedAvailabilityStatus']
 
-                   if item_status == "IN_STOCK":
-                        return True
-                   else:
+                   if 'itemEndDate' in data:
                         return False
+                   else:
+                        return True
 
                except Exception as e:
                    print(f"Error fetching items from eBay API: {e}")
