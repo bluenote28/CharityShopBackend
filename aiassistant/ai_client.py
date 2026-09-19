@@ -6,7 +6,7 @@ import os
 
 API_KEY = os.environ.get("AI_KEY")
 BASE_URL = "https://inference.do-ai.run/v1/chat/completions"
-
+INVALID_AI_DESCRIPTION = 'AI description is unavailable'
 
 def _message_text(message):
     if not isinstance(message, dict):
@@ -42,28 +42,6 @@ def _error_detail(data):
         return error
     return None
 
-
-INVALID_AI_DESCRIPTION = 'AI description is unavailable'
-
-
-def _stored_ai_description(ebay_id):
-    if not ebay_id:
-        return None
-
-    stored = (
-        Item.objects.filter(ebay_id=ebay_id)
-        .values_list('ai_description', flat=True)
-        .first()
-    )
-    if not isinstance(stored, str):
-        return None
-
-    text = stored.strip()
-    if not text or text == INVALID_AI_DESCRIPTION:
-        return None
-    return text
-
-
 def _user_prompt(item_link, item_name=None, ebay_id=None):
     lines = [
         "Describe this exact eBay listing. Do not describe a different item.",
@@ -77,9 +55,6 @@ def _user_prompt(item_link, item_name=None, ebay_id=None):
 
 
 def get_item_description(item_link, item_name=None, ebay_id=None):
-    existing = _stored_ai_description(ebay_id)
-    if existing:
-        return {'description': existing}
 
     system_prompt = (
         "You research a single eBay listing and write a detailed description of that item. "
