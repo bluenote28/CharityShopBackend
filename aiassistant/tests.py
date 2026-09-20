@@ -5,8 +5,8 @@ import requests
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
 
-from aiassistant.ai_client import _error_detail, _message_text, get_ai_advice
-from aiassistant.views import AiItemAssistantView
+from aiassistant.ai_client import _error_detail, _message_text, get_ai_advice, get_ai_chat_reply, normalize_chat_messages
+from aiassistant.views import AiChatView, AiItemAssistantView
 
 
 def _item(name="Vintage Lamp", seller_description="Seller notes", charity_id=42):
@@ -244,3 +244,63 @@ class TestAiItemAssistantView(unittest.TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, {"detail": "Missing eBay ID"})
+
+
+class TestNormalizeChatMessages(unittest.TestCase):
+
+    def test_requires_user_last_message(self):
+        self.assertIsNone(normalize_chat_messages([
+            {"role": "assistant", "content": "Hello"},
+        ]))
+
+    def test_trims_and_keeps_user_message(self):
+        self.assertEqual(
+            normalize_chat_messages([{"role": "user", "content": "  lamps  "}]),
+            [{"role": "user", "content": "lamps"}],
+        )
+
+
+class TestGetAiChatReply(unittest.TestCase):
+
+    @patch("aiassistant.ai_client.requests.post")
+    def test_returns_assistant_message(self, mock_post):
+        mock_post.return_value = _ok_response("Try searching vintage lamps")
+        result = get_ai_chat_reply(
+            [{"role": "user", "content": "lamps"}],
+            page_context={"path": "/search", "search": "?q=lamp"},
+        )
+        self.assertEqual(result, {"message": "Try searching vintage lamps"})
+        payload = mock_post.call_args.kwargs["json"]
+        self.assertEqual(payload["messages"][0]["role"], "system")
+        self.assertIn("/search?q=lamp", payload["messages"][0]["content"])
+        self.assertNotIn("thinking", payload)
+
+
+class TestAiChatView(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = AiChatView.as_view()
+
+    @patch("aiassistant.views.get_ai_chat_reply", return_value={"message": "hello"})
+    def test_post_returns_message(self, mock_chat):
+        request = self.factory.post(
+            "/api/ai_assistant/chat/",
+            {"messages": [{"role": "user", "content": "hi"}], "page_context": "/"},
+            format="json",
+        )
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"message": "hello"})
+        mock_chat.assert_called_once_with(
+            [{"role": "user", "content": "hi"}],
+            page_context="/",
+        )
+
+    def test_post_invalid_messages_returns_400(self):
+        request = self.factory.post("/api/ai_assistant/chat/", {}, format="json")
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {"detail": "Invalid chat messages"})
