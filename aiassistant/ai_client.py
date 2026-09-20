@@ -3,6 +3,7 @@ import requests
 from django.core.cache import caches
 from ebay.models import Item
 import os
+from ebay.ebay_client import EbayClient
 
 API_KEY = os.environ.get("AI_KEY")
 BASE_URL = "https://inference.do-ai.run/v1/chat/completions"
@@ -42,26 +43,18 @@ def _error_detail(data):
         return error
     return None
 
-def _user_prompt(item_link, item_name=None, ebay_id=None):
-    lines = [
-        "Describe this exact eBay listing. Do not describe a different item.",
-        f"eBay item ID: {ebay_id}",
-    ]
-    if item_name:
-        lines.append(f"Item name: {item_name}")
-    if item_link:
-        lines.append(f"eBay listing URL: {item_link}")
-    return "\n".join(lines)
+def get_ai_advice(ebay_id):
 
+    item = Item.objects.get(ebay_id=ebay_id)
 
-def get_item_description(item_link, item_name=None, ebay_id=None):
+    if  not item.seller_description:
+        ebay_client = EbayClient(item.charity_id)
+        item_details = ebay_client.getItemDetails(ebay_id)
+        item.seller_description = item_details['seller_description']
 
-    system_prompt = (
-        "You research a single eBay listing and write a detailed description of that item. "
-        "Provide infomation a buyer should know that is not available at the link. "
-        "If you cannot open the URL, describe only the named item with that ID. "
-        "Never describe a different product."
-    )
+    system_prompt = """You research a single eBay listing and write a detailed description of that item. "
+        "Provide infomation a buyer should know that is not available in the item name or seller description."
+        "Never describe a different product."""
 
     try:
         response = requests.post(
@@ -74,7 +67,7 @@ def get_item_description(item_link, item_name=None, ebay_id=None):
                 "model": "gemma-4-31B-it",
                 "messages": [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": _user_prompt(item_link, item_name, ebay_id)},
+                    {"role": "user", "content": f"Item name: {item.name}, Seller description: {item.seller_description}"},
                 ],
                 "max_completion_tokens": 1024,
                 "temperature": 0.3,
@@ -99,7 +92,6 @@ def get_item_description(item_link, item_name=None, ebay_id=None):
     if not content:
         return {'detail': 'AI description is unavailable'}
 
-    item = Item.objects.get(ebay_id=ebay_id)
     item.ai_description = content
     item.save()
     caches['diskcache'].delete(f'item_{ebay_id}')
