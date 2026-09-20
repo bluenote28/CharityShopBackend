@@ -9,32 +9,6 @@ API_KEY = os.environ.get("AI_KEY")
 BASE_URL = "https://inference.do-ai.run/v1/chat/completions"
 INVALID_AI_DESCRIPTION = 'AI description is unavailable'
 
-def _message_text(message):
-    if not isinstance(message, dict):
-        return ''
-
-    content = message.get('content')
-    if isinstance(content, str) and content.strip():
-        return content.strip()
-
-    if isinstance(content, list):
-        parts = []
-        for part in content:
-            if isinstance(part, str):
-                parts.append(part)
-            elif isinstance(part, dict) and part.get('type') in (None, 'text', 'output_text'):
-                parts.append(part.get('text') or part.get('content') or '')
-        text = ''.join(parts).strip()
-        if text:
-            return text
-
-    for key in ('output_text', 'text'):
-        value = message.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return ''
-
-
 def _error_detail(data):
     error = data.get('error') if isinstance(data, dict) else None
     if isinstance(error, dict):
@@ -42,6 +16,28 @@ def _error_detail(data):
     if isinstance(error, str) and error.strip():
         return error
     return None
+
+
+def call_ai_api(messages):
+    try:
+        response = requests.post(
+            BASE_URL,
+            headers={
+                "Authorization": "Bearer " + API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "gemma-4-31B-it",
+                "messages": messages,
+                "max_completion_tokens": 1024,
+                "temperature": 0.3,
+            },
+            timeout=60,
+        )
+    except requests.RequestException:
+        return {'detail': 'AI description is unavailable'}
+
+    return response
 
 def get_ai_advice(ebay_id):
 
@@ -56,44 +52,36 @@ def get_ai_advice(ebay_id):
         "Provide infomation a buyer should know that is not available in the item name or seller description."
         "Never describe a different product."""
 
-    try:
-        response = requests.post(
-            BASE_URL,
-            headers={
-                "Authorization": "Bearer " + API_KEY,
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "gemma-4-31B-it",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Item name: {item.name}, Seller description: {item.seller_description}"},
-                ],
-                "max_completion_tokens": 1024,
-                "temperature": 0.3,
-            },
-            timeout=60,
-        )
-    except requests.RequestException:
-        return {'detail': 'AI description is unavailable'}
+    response = call_ai_api([{"role": "system", "content": system_prompt}, {"role": "user", "content": f"Item name: {item.name}, Seller description: {item.seller_description}"}])
 
     try:
-        data = response.json()
-    except ValueError:
-        return {'detail': 'AI description is unavailable'}
+        choices = data.get('choices') or []
+        content = choices[0].get('message')
 
-    if not response.ok:
-        return {'detail': _error_detail(data) or 'AI description is unavailable'}
+        item.ai_description = content
+        item.save()
+        caches['diskcache'].delete(f'item_{ebay_id}')
 
-    choices = data.get('choices') or []
-    message = choices[0].get('message') if choices and isinstance(choices[0], dict) else {}
-    content = _message_text(message)
-
-    if not content:
-        return {'detail': 'AI description is unavailable'}
-
-    item.ai_description = content
-    item.save()
-    caches['diskcache'].delete(f'item_{ebay_id}')
-
+    except Exception as e:
+        return response.json()
+    
     return {'description': content}
+
+def ai_assistant_chat(messages):
+    system = """You are a shopping assistant for Charity Shop, a website that lists eBay items "
+    "sold to benefit charities. Help people search, choose categories, understand "
+    "how purchases support nonprofits, and use the site. "
+    "Do not invent specific current listings, prices, or stock. "
+    "Suggest search phrases and category names instead. Keep answers concise. "
+    "Use markdown when it helps readability."""
+
+    response = call_ai_api([{"role": "system", "content": system}] + messages)
+
+    try:
+
+        choices = data.get('choices') or []
+        content = choices[0].get('message')
+        return {'message': content}
+
+    except Exception as e:
+        return response.json()
