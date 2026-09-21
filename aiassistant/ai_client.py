@@ -4,6 +4,8 @@ from django.core.cache import caches
 from ebay.models import Item
 import os
 from ebay.ebay_client import EbayClient
+from aiassistant.tools import get_all_charities
+from aiassistant.constants import assistant_tools
 
 API_KEY = os.environ.get("AI_KEY")
 BASE_URL = "https://inference.do-ai.run/v1/chat/completions"
@@ -18,26 +20,28 @@ def _error_detail(data):
     return None
 
 
-def call_ai_api(messages):
+def call_ai_api(messages, tools=None):
+    payload = {
+        "model": "gemma-4-31B-it",
+        "messages": messages,
+        "max_completion_tokens": 1024,
+        "temperature": 0.3,
+    }
+    if tools:
+        payload["tools"] = tools
+
     try:
-        response = requests.post(
+        return requests.post(
             BASE_URL,
             headers={
                 "Authorization": "Bearer " + API_KEY,
                 "Content-Type": "application/json",
             },
-            json={
-                "model": "gemma-4-31B-it",
-                "messages": messages,
-                "max_completion_tokens": 1024,
-                "temperature": 0.3,
-            },
+            json=payload,
             timeout=60,
         )
     except requests.RequestException:
         return {'detail': 'AI description is unavailable'}
-
-    return response
 
 def get_ai_advice(ebay_id):
 
@@ -68,20 +72,43 @@ def get_ai_advice(ebay_id):
     return {'description': content}
 
 def ai_assistant_chat(messages):
-    system = """You are a shopping assistant for Charity Shop, a website that lists eBay items "
-    "sold to benefit charities. Help people search, choose categories, understand "
-    "how purchases support nonprofits, and use the site. "
-    "Do not invent specific current listings, prices, or stock. "
-    "Suggest search phrases and category names instead. Keep answers concise. "
-    "Use markdown when it helps readability."""
+    system = (
+        "You are a shopping assistant for Charity Shop, a website that lists eBay items "
+        "sold to benefit charities. Help people search, choose categories, understand "
+        "how purchases support nonprofits, and use the site. "
+        "Do not invent specific current listings, prices, or stock. "
+        "Suggest search phrases and category names instead. Keep answers concise. "
+        "Use markdown when it helps readability."
+    )
 
-    response = call_ai_api([{"role": "system", "content": system}] + messages)
+    conversation = [{"role": "system", "content": system}] + list(messages)
+    response = call_ai_api(conversation, tools=assistant_tools)
 
     try:
-
+        data = response.json()
         choices = data.get('choices') or []
-        content = choices[0].get('message')
-        return {'message': content}
+        choice = choices[0]
+        assistant_message = choice.get('message') or {}
+
+        if choice.get('finish_reason') == "tool_calls":
+            tool_call = (assistant_message.get('tool_calls') or [])[0]
+            function = tool_call.get('function') or {}
+            tool_name = function.get('name')
+            if tool_name == "get_all_charities":
+                conversation.append(assistant_message)
+                conversation.append({
+                    "role": "tool",
+                    "content": get_all_charities(),
+                    "tool_call_id": tool_call.get('id'),
+                })
+                response = call_ai_api(conversation, tools=assistant_tools)
+                data = response.json()
+                choices = data.get('choices') or []
+                content = (choices[0].get('message') or {}).get('content')
+                return {'message': content}
+
+        return {'message': assistant_message.get('content')}
 
     except Exception as e:
-        return response.json()
+        print(repr(e), flush=True)
+        return response.json() if hasattr(response, 'json') else response
