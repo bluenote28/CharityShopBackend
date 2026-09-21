@@ -43,6 +43,12 @@ def call_ai_api(messages, tools=None):
     except requests.RequestException:
         return {'detail': 'AI description is unavailable'}
 
+def get_ai_response_data(response):
+    data = response.json()
+    choices = data.get('choices') or []
+    choice = choices[0]
+    return choice
+
 def get_ai_advice(ebay_id):
 
     item = Item.objects.get(ebay_id=ebay_id)
@@ -59,8 +65,8 @@ def get_ai_advice(ebay_id):
     response = call_ai_api([{"role": "system", "content": system_prompt}, {"role": "user", "content": f"Item name: {item.name}, Seller description: {item.seller_description}"}])
 
     try:
-        choices = data.get('choices') or []
-        content = choices[0].get('message')
+        data = get_ai_response_data(response)
+        content = data.get('message').get('content')
 
         item.ai_description = content
         item.save()
@@ -85,10 +91,8 @@ def ai_assistant_chat(messages):
     response = call_ai_api(conversation, tools=assistant_tools)
 
     try:
-        data = response.json()
-        choices = data.get('choices') or []
-        choice = choices[0]
-        assistant_message = choice.get('message') or {}
+        data = get_ai_response_data(response)
+        assistant_message = data.get('message') or {}
 
         if choice.get('finish_reason') == "tool_calls":
             tool_call = (assistant_message.get('tool_calls') or [])[0]
@@ -102,9 +106,8 @@ def ai_assistant_chat(messages):
                     "tool_call_id": tool_call.get('id'),
                 })
                 response = call_ai_api(conversation, tools=assistant_tools)
-                data = response.json()
-                choices = data.get('choices') or []
-                content = (choices[0].get('message') or {}).get('content')
+                data = get_ai_response_data(response)
+                content = (data.get('message') or {}).get('content')
                 return {'message': content}
 
         return {'message': assistant_message.get('content')}
