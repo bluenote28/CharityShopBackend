@@ -2,8 +2,10 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core import serializers
 from ebay.models import Charity
 from ebay.serializers import CharitySerializer
+from ebay.search import search
 
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
@@ -20,5 +22,11 @@ def get_all_charities():
    data = CharitySerializer(Charity.objects.all(), many=True).data
    return json.dumps(list(data), cls=DjangoJSONEncoder)
 
-if __name__ == "__main__":
-   checkMysticMonk()
+def search_items(arguments):
+   query = arguments.get('query') or None
+   charity_id = arguments.get('charity_id') or None
+   category = arguments.get('category') or None
+   charity_ids = arguments.get('charity_ids') or None
+   data = serializers.serialize('json', search(query, charity_id, category, charity_ids))
+   return data
+ 
