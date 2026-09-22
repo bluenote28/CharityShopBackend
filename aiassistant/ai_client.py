@@ -6,6 +6,8 @@ import os
 from ebay.ebay_client import EbayClient
 from aiassistant.tools import get_all_charities
 from aiassistant.constants import assistant_tools
+from aiassistant.tools import search_items
+import json
 
 API_KEY = os.environ.get("AI_KEY")
 BASE_URL = "https://inference.do-ai.run/v1/chat/completions"
@@ -94,7 +96,7 @@ def ai_assistant_chat(messages):
         data = get_ai_response_data(response)
         assistant_message = data.get('message') or {}
 
-        if choice.get('finish_reason') == "tool_calls":
+        if data.get('finish_reason') == "tool_calls":
             tool_call = (assistant_message.get('tool_calls') or [])[0]
             function = tool_call.get('function') or {}
             tool_name = function.get('name')
@@ -103,6 +105,17 @@ def ai_assistant_chat(messages):
                 conversation.append({
                     "role": "tool",
                     "content": get_all_charities(),
+                    "tool_call_id": tool_call.get('id'),
+                })
+                response = call_ai_api(conversation, tools=assistant_tools)
+                data = get_ai_response_data(response)
+                content = (data.get('message') or {}).get('content')
+                return {'message': content}
+            elif tool_name == "search_items":
+                conversation.append(assistant_message)
+                conversation.append({
+                    "role": "tool",
+                    "content": search_items(json.loads(function.get('arguments'))),
                     "tool_call_id": tool_call.get('id'),
                 })
                 response = call_ai_api(conversation, tools=assistant_tools)
