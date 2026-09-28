@@ -18,4 +18,11 @@ search_function = {
     },
 }
 
-assistant_tools = [{"type": "function", "function": get_all_charities_function}, {"type": "function", "function": search_function}]
+search_for_coffee_function = {
+    "name": "search for coffee",
+    "description": "Searches Mystick Monk Coffee for coffee.",
+}
+
+assistant_tools = [{"type": "function", "function": get_all_charities_function}, 
+{"type": "function", "function": search_function},
+{"type": "function", "function": search_for_coffee_function}]
