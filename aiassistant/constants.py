@@ -19,7 +19,7 @@ search_function = {
 }
 
 search_for_coffee_function = {
-    "name": "search for coffee",
+    "name": "search_for_coffee",
     "description": "Searches Mystick Monk Coffee for coffee.",
 }
 
