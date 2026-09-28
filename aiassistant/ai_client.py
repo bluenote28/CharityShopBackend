@@ -97,46 +97,32 @@ def ai_assistant_chat(messages):
 
     try:
         data = get_ai_response_data(response)
-        assistant_message = data.get('message').get('content') or {}
-        logger.info(f"response: {data}")
-        logger.info(f"finish_reason: {data.get('finish_reason')}")
+        assistant_message = data.get('message') or {}
 
         if data.get('finish_reason') == "tool_calls":
-            tool_calls = (data.get('tool_calls') or [])
-            logger.info(f"tool_calls: {tool_calls}")
-            tool_names = [tool_call.get('function').get('name') for tool_call in tool_calls]
-            logger.info(f"tool_names: {tool_names}")
-            if "get_all_charities" in tool_names:
-                conversation.append(assistant_message)
+            tool_calls = assistant_message.get('tool_calls') or []
+            conversation.append(assistant_message)
+            for tool_call in tool_calls:
+                function = tool_call.get('function') or {}
+                name = function.get('name')
+                raw_arguments = function.get('arguments') or '{}'
+                arguments = json.loads(raw_arguments) if isinstance(raw_arguments, str) else raw_arguments
+                if name == "get_all_charities":
+                    content = get_all_charities()
+                elif name == "search_items":
+                    content = search_items(arguments)
+                elif name == "search_for_coffee":
+                    content = json.dumps(search_for_coffee())
+                else:
+                    content = json.dumps({"error": f"Unknown tool: {name}"})
                 conversation.append({
                     "role": "tool",
-                    "content": get_all_charities(),
+                    "content": content,
                     "tool_call_id": tool_call.get('id'),
                 })
-                response = call_ai_api(conversation, tools=assistant_tools)
-                data = get_ai_response_data(response)
-                assistant_message = data.get('message')
-            if "search_items" in tool_names:
-                conversation.append(assistant_message)
-                conversation.append({
-                    "role": "tool",
-                    "content": search_items(json.loads(function.get('arguments'))),
-                    "tool_call_id": tool_call.get('id'),
-                })
-                response = call_ai_api(conversation, tools=assistant_tools)
-                data = get_ai_response_data(response)
-                logger.info(f"data in search_items: {data}")
-                assistant_message = data.get('message')
-            if "search_for_coffee" in tool_names:
-                conversation.append(assistant_message)
-                conversation.append({
-                    "role": "tool",
-                    "content": search_for_coffee(),
-                    "tool_call_id": tool_call.get('id'),
-                })
-                response = call_ai_api(conversation, tools=assistant_tools)
-                data = get_ai_response_data(response)
-                assistant_message = data.get('message') or {}
+            response = call_ai_api(conversation, tools=assistant_tools)
+            data = get_ai_response_data(response)
+            assistant_message = data.get('message') or {}
 
         return {'message': assistant_message.get('content')}
 
