@@ -124,6 +124,7 @@ def ai_assistant_chat(messages):
                 })
                 response = call_ai_api(conversation, tools=assistant_tools)
                 data = get_ai_response_data(response)
+                logger.info(f"data in search_items: {data}")
                 content = (data.get('message') or {}).get('content')
                 return {'message': content}
             if "search_for_coffee" in tool_names:
