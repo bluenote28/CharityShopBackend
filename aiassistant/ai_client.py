@@ -4,9 +4,8 @@ from django.core.cache import caches
 from ebay.models import Item
 import os
 from ebay.ebay_client import EbayClient
-from aiassistant.tools import get_all_charities
+from aiassistant.tools import get_all_charities, search_for_coffee,search_items
 from aiassistant.constants import assistant_tools
-from aiassistant.tools import search_items
 import json
 
 API_KEY = os.environ.get("AI_KEY")
@@ -120,6 +119,17 @@ def ai_assistant_chat(messages):
                 conversation.append({
                     "role": "tool",
                     "content": search_items(json.loads(function.get('arguments'))),
+                    "tool_call_id": tool_call.get('id'),
+                })
+                response = call_ai_api(conversation, tools=assistant_tools)
+                data = get_ai_response_data(response)
+                content = (data.get('message') or {}).get('content')
+                return {'message': content}
+            elif tool_name == "search_for_coffee":
+                conversation.append(assistant_message)
+                conversation.append({
+                    "role": "tool",
+                    "content": search_for_coffee(),
                     "tool_call_id": tool_call.get('id'),
                 })
                 response = call_ai_api(conversation, tools=assistant_tools)
