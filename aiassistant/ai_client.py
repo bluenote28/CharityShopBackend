@@ -12,6 +12,7 @@ import json
 API_KEY = os.environ.get("AI_KEY")
 BASE_URL = "https://inference.do-ai.run/v1/chat/completions"
 INVALID_AI_DESCRIPTION = 'AI description is unavailable'
+logger = logging.getLogger(__name__)
 
 def _error_detail(data):
     error = data.get('error') if isinstance(data, dict) else None
@@ -129,5 +130,5 @@ def ai_assistant_chat(messages):
         return {'message': assistant_message.get('content')}
 
     except Exception as e:
-        print(repr(e), flush=True)
+        logger.error(f"Error in ai_assistant_chat: {repr(e)}")
         return response.json() if hasattr(response, 'json') else response
