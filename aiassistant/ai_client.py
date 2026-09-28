@@ -99,6 +99,7 @@ def ai_assistant_chat(messages):
         data = get_ai_response_data(response)
         assistant_message = data.get('message').get('content') or {}
         logger.info(f"response: {data}")
+        logger.info(f"finish_reason: {data.get('finish_reason')}")
 
         if data.get('finish_reason') == "tool_calls":
             tool_calls = (data.get('tool_calls') or [])
