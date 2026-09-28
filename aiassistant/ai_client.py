@@ -102,6 +102,7 @@ def ai_assistant_chat(messages):
 
         if data.get('finish_reason') == "tool_calls":
             tool_calls = (data.get('tool_calls') or [])
+            logger.info(f"tool_calls: {tool_calls}")
             tool_names = [tool_call.get('function').get('name') for tool_call in tool_calls]
             logger.info(f"tool_names: {tool_names}")
             if "get_all_charities" in tool_names:
