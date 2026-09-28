@@ -14,12 +14,13 @@ def searchforCoffee():
    response = requests.get(mystic_monk_coffee_url, headers=headers)
    soup = BeautifulSoup(response.text, "html.parser")
    coffee = soup.find_all("product-card", class_="product-card")
-   ##coffee_names  = [coffee.find("div", class_="coffee-title").text for coffee in coffee]
    coffee_names = soup.find_all("div", class_="coffee-title")
+   coffee_names = [coffee_name.get_text(separator=" ", strip=True) for coffee_name in coffee_names]
    coffee_images = soup.find_all("img", class_="coffee-image")
+   coffee_images = [coffee_image["src"] for coffee_image in coffee_images]
    coffee_urls = soup.find_all("a", class_="coffee-card__link-overlay")
    coffee_urls = [coffee_url["href"] for coffee_url in coffee_urls]
-   print(coffee_urls)
+   return {"coffee_names": coffee_names, "coffee_images": coffee_images}
 
 def get_all_charities():
    data = CharitySerializer(Charity.objects.all(), many=True).data
