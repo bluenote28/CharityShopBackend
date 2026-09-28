@@ -9,7 +9,7 @@ from ebay.search import search
 
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
-def searchforCoffee():
+def search_for_coffee():
    mystic_monk_coffee_url = "https://www.mysticmonkcoffee.com/collections/all-coffee?filter.p.m.coffee_product.coffee_size=12oz&filter.v.availability=1"
    response = requests.get(mystic_monk_coffee_url, headers=headers)
    soup = BeautifulSoup(response.text, "html.parser")
@@ -33,7 +33,3 @@ def search_items(arguments):
    charity_ids = arguments.get('charity_ids') or None
    data = serializers.serialize('json', search(query, charity_id, category, charity_ids)[:10])
    return data
- 
-
-if __name__ == "__main__":
-   searchforCoffee()
