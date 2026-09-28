@@ -97,7 +97,7 @@ def ai_assistant_chat(messages):
 
     try:
         data = get_ai_response_data(response)
-        assistant_message = data.get('message') or {}
+        assistant_message = data.get('message').get('content') or {}
         logger.info(f"response: {data}")
 
         if data.get('finish_reason') == "tool_calls":
@@ -114,8 +114,7 @@ def ai_assistant_chat(messages):
                 })
                 response = call_ai_api(conversation, tools=assistant_tools)
                 data = get_ai_response_data(response)
-                content = (data.get('message') or {}).get('content')
-                return {'message': content}
+                assistant_message = data.get('message')
             if "search_items" in tool_names:
                 conversation.append(assistant_message)
                 conversation.append({
@@ -126,8 +125,7 @@ def ai_assistant_chat(messages):
                 response = call_ai_api(conversation, tools=assistant_tools)
                 data = get_ai_response_data(response)
                 logger.info(f"data in search_items: {data}")
-                content = (data.get('message') or {}).get('content')
-                return {'message': content}
+                assistant_message = data.get('message')
             if "search_for_coffee" in tool_names:
                 conversation.append(assistant_message)
                 conversation.append({
@@ -137,8 +135,7 @@ def ai_assistant_chat(messages):
                 })
                 response = call_ai_api(conversation, tools=assistant_tools)
                 data = get_ai_response_data(response)
-                content = (data.get('message') or {}).get('content')
-                return {'message': content}
+                assistant_message = data.get('message') or {}
 
         return {'message': assistant_message.get('content')}
 
