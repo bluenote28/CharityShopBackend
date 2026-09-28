@@ -101,10 +101,9 @@ def ai_assistant_chat(messages):
         logger.info(f"response: {data}")
 
         if data.get('finish_reason') == "tool_calls":
-            tool_call = (assistant_message.get('tool_calls') or [])[0]
-            function = tool_call.get('function') or {}
-            tool_name = function.get('name')
-            if tool_name == "get_all_charities":
+            tool_calls = (assistant_message.get('tool_calls') or [])[0]
+            tool_names = [tool_call.get('function').get('name') for tool_call in tool_calls]
+            if "get_all_charities" in tool_names:
                 conversation.append(assistant_message)
                 conversation.append({
                     "role": "tool",
@@ -115,7 +114,7 @@ def ai_assistant_chat(messages):
                 data = get_ai_response_data(response)
                 content = (data.get('message') or {}).get('content')
                 return {'message': content}
-            elif tool_name == "search_items":
+            if "search_items" in tool_names:
                 conversation.append(assistant_message)
                 conversation.append({
                     "role": "tool",
@@ -126,7 +125,7 @@ def ai_assistant_chat(messages):
                 data = get_ai_response_data(response)
                 content = (data.get('message') or {}).get('content')
                 return {'message': content}
-            elif tool_name == "search_for_coffee":
+            if "search_for_coffee" in tool_names:
                 conversation.append(assistant_message)
                 conversation.append({
                     "role": "tool",
