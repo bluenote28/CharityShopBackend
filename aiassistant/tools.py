@@ -3,9 +3,9 @@ import requests
 from bs4 import BeautifulSoup
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core import serializers
-from ebay.models import Charity
-from ebay.serializers import CharitySerializer
-from ebay.search import search
+#from ebay.models import Charity
+#from ebay.serializers import CharitySerializer
+#from ebay.search import search
 
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
@@ -19,8 +19,8 @@ def search_for_coffee():
    coffee_images = soup.find_all("img", class_="coffee-image")
    coffee_images = [coffee_image["src"] for coffee_image in coffee_images]
    coffee_urls = soup.find_all("a", class_="coffee-card__link-overlay")
-   coffee_urls = [coffee_url["href"] for coffee_url in coffee_urls]
-   return {"coffee_names": coffee_names, "coffee_images": coffee_images}
+   coffee_urls = [f'https://www.mysticmonkcoffee.com{coffee_url["href"]}' for coffee_url in coffee_urls]
+   return {"coffee_names": coffee_names, "coffee_images": coffee_images, "coffee_urls": coffee_urls}
 
 def get_all_charities():
    data = CharitySerializer(Charity.objects.all(), many=True).data
