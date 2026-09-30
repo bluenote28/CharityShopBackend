@@ -26,7 +26,7 @@ def call_ai_api(messages, tools=None):
     payload = {
         "model": "gemma-4-31B-it",
         "messages": messages,
-        "max_completion_tokens": 1024,
+        "max_completion_tokens": 2248,
         "temperature": 0.3,
     }
     if tools:
@@ -86,16 +86,17 @@ def ai_assistant_chat(messages):
         "how purchases support nonprofits, and use the site. "
         "Do not invent specific current listings, prices, or stock. "
         "When asked about if the site has a specific item perform a search for the item and return the results. "
-        "In the results return the item name, image, and url." 
-        "Always use the search_items function first and also use another tool and return the results if relevant"
-        "For example, if the user asks for coffee, use the search_items function to search for coffee and then use the search_for_coffee tool and return the results of each."
-        "Use markdown when it helps readability."
+        "In the results return the item name, image, and url. "
+        "Always present items in a markdown table with three columns with no column headers. Put the item name in the first column. "
+        "Put the image in the second column as an HTML img tag with width 40. Put the item link in the third column"
+        "Always use the search_items function first and also use another tool and return the results if relevant. "
+        "For example, if the user asks for coffee, use the search_items function to search for coffee and then use the search_for_coffee tool and return the results of each. "
     )
 
     conversation = [{"role": "system", "content": system}] + list(messages)
-    response = call_ai_api(conversation, tools=assistant_tools)
 
     try:
+        response = call_ai_api(conversation, tools=assistant_tools)
         data = get_ai_response_data(response)
         assistant_message = data.get('message') or {}
 
