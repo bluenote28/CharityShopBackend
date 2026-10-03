@@ -30,12 +30,14 @@ else:
 ALLOWED_HOSTS = ['charity-shop-backend-xm3ai.ondigitalocean.app', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'corsheaders',
     'ebay.apps.EbayConfig',
@@ -144,7 +146,36 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'charityshopbackend.wsgi.application'
+ASGI_APPLICATION = 'charityshopbackend.asgi.application'
+
+
+def _channel_layer_hosts():
+    redis_url = os.environ.get('REDIS_URL')
+    if redis_url and redis_url.startswith('rediss://'):
+        import ssl
+
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        return [{'address': redis_url, 'ssl': ssl_context}]
+    return [redis_url]
+
+
+if TESTING or DEVELOPMENT_MODE == "True":
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': _channel_layer_hosts(),
+            },
+        },
+    }
 
 if TESTING:
     DATABASES = {

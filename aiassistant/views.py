@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .ai_client import get_ai_advice, ai_assistant_chat
+from .ai_client import get_ai_advice
+
 
 class AiItemAssistantView(APIView):
 
@@ -11,15 +12,4 @@ class AiItemAssistantView(APIView):
             return Response({'detail': 'Missing eBay ID'}, status=status.HTTP_400_BAD_REQUEST)
 
         result = get_ai_advice(ebay_id)
-        return Response(result)
-
-
-class AiChatView(APIView):
-
-    def post(self, request):
-        messages = request.data.get('messages')
-        if messages is None:
-            return Response({'detail': 'Invalid chat messages'}, status=status.HTTP_400_BAD_REQUEST)
-
-        result = ai_assistant_chat(messages)
         return Response(result)
