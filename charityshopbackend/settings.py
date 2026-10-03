@@ -152,12 +152,7 @@ ASGI_APPLICATION = 'charityshopbackend.asgi.application'
 def _channel_layer_hosts():
     redis_url = os.environ.get('REDIS_URL')
     if redis_url and redis_url.startswith('rediss://'):
-        import ssl
-
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        return [{'address': redis_url, 'ssl': ssl_context}]
+        return [{'address': redis_url, 'ssl_cert_reqs': None}]
     return [redis_url]
 
 
