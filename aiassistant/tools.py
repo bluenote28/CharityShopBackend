@@ -13,7 +13,6 @@ def search_for_coffee():
    mystic_monk_coffee_url = "https://www.mysticmonkcoffee.com/collections/all-coffee?filter.p.m.coffee_product.coffee_size=12oz&filter.v.availability=1"
    response = requests.get(mystic_monk_coffee_url, headers=headers)
    soup = BeautifulSoup(response.text, "html.parser")
-   coffee = soup.find_all("product-card", class_="product-card")
    coffee_names = soup.find_all("div", class_="coffee-title")
    coffee_names = [coffee_name.get_text(separator=" ", strip=True) for coffee_name in coffee_names]
    coffee_images = soup.find_all("img", class_="coffee-image")
