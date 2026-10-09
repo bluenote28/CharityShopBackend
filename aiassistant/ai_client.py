@@ -246,7 +246,7 @@ def stream_ai_completion(messages, tools=None):
                     'content': '',
                 }
 
-            for chunk in _iter_sse_data(response):
+            for chunk in response:
                 choices = chunk.get('choices') or []
                 if not choices:
                     continue
