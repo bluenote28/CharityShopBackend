@@ -264,6 +264,7 @@ def stream_ai_completion(messages, tools=None):
         yield {'type': 'error', 'detail': str(e)}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
     except Exception:
+        logger.error(f"Error in stream_ai_completion: {repr(e)}")
         yield {'type': 'error', 'detail': 'AI chat is unavailable'}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
 
