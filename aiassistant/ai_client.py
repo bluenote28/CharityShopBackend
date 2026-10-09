@@ -177,9 +177,6 @@ def _execute_tool_call(tool_call):
     }
 
 def _iter_sse_data(response):
-    logger.info('Iterating SSE data')
-    logger.info(response.text)
-    logger.info(response.iter_lines(decode_unicode=True))
     for raw_line in response.iter_lines(decode_unicode=True):
         if not raw_line:
             continue
@@ -262,7 +259,8 @@ def stream_ai_completion(messages, tools=None):
     except requests.RequestException as e:
         yield {'type': 'error', 'detail': str(e)}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error in stream_ai_completion: {repr(e)}")
         yield {'type': 'error', 'detail': 'AI chat is unavailable'}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
 
