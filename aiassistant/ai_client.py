@@ -266,10 +266,14 @@ def stream_ai_completion(messages, tools=None):
     except requests.RequestException as e:
         yield {'type': 'error', 'detail': str(e)}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
+    except json.JSONDecodeError:
+            logger.warning('Skipping invalid SSE chunk: %s', data)
     except Exception as e:
         logger.error(f"Error in stream_ai_completion: {repr(e)}")
         yield {'type': 'error', 'detail': 'AI chat is unavailable'}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
+
+    
 
     tool_calls = None
     if tool_calls_by_index:
