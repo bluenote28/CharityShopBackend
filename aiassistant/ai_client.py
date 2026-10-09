@@ -217,7 +217,6 @@ def _merge_tool_call_delta(tool_calls_by_index, delta_tool_calls):
 def stream_ai_completion(messages, tools=None):
     """
     Stream a chat completion.
-
     Yields token events as they arrive. Returns a final summary dict:
     {"finish_reason": str|None, "tool_calls": list|None, "content": str}
     """
@@ -246,10 +245,7 @@ def stream_ai_completion(messages, tools=None):
                     'content': '',
                 }
 
-            logger.info("Response text: " + response.text)
-            data = json.loads(response.text)
-            logger.info("Data: " + str(data))
-            for chunk in data:
+            for chunk in _iter_sse_data(response):
                 choices = chunk.get('choices') or []
                 if not choices:
                     continue
@@ -266,14 +262,9 @@ def stream_ai_completion(messages, tools=None):
     except requests.RequestException as e:
         yield {'type': 'error', 'detail': str(e)}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
-    except json.JSONDecodeError:
-            logger.warning('Skipping invalid SSE chunk: %s', response.text)
-    except Exception as e:
-        logger.error(f"Error in stream_ai_completion: {repr(e)}")
+    except Exception:
         yield {'type': 'error', 'detail': 'AI chat is unavailable'}
         return {'finish_reason': 'error', 'tool_calls': None, 'content': ''}
-
-    
 
     tool_calls = None
     if tool_calls_by_index:
