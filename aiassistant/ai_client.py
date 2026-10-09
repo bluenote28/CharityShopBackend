@@ -246,7 +246,10 @@ def stream_ai_completion(messages, tools=None):
                     'content': '',
                 }
 
-            for chunk in response.iter_lines(decode_unicode=True):
+            response_text = response.iter_lines(decode_unicode=True)
+            data = json.loads(response_text)
+
+            for chunk in data:
                 choices = chunk.get('choices') or []
                 if not choices:
                     continue
