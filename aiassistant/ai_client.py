@@ -176,21 +176,10 @@ def _execute_tool_call(tool_call):
         "tool_call_id": tool_call.get('id'),
     }
 
-def _resolve_tool_calls(conversation, response):
-    """Run any requested tools and return an updated conversation for the final reply."""
-    data = get_ai_response_data(response)
-    assistant_message = data.get('message') or {}
-
-    if data.get('finish_reason') != "tool_calls":
-        return conversation, assistant_message, False
-
-    tool_calls = assistant_message.get('tool_calls') or []
-    conversation.append(assistant_message)
-    for tool_call in tool_calls:
-        conversation.append(_execute_tool_call(tool_call))
-    return conversation, assistant_message, True
-
 def _iter_sse_data(response):
+    logger.info('Iterating SSE data')
+    logger.info(response)
+    logger.info(response.iter_lines(decode_unicode=True))
     for raw_line in response.iter_lines(decode_unicode=True):
         if not raw_line:
             continue
