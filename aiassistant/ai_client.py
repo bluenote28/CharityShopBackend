@@ -178,7 +178,7 @@ def _execute_tool_call(tool_call):
 
 def _iter_sse_data(response):
     logger.info('Iterating SSE data')
-    logger.info(response)
+    logger.info(response.json())
     logger.info(response.iter_lines(decode_unicode=True))
     for raw_line in response.iter_lines(decode_unicode=True):
         if not raw_line:
