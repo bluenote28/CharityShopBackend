@@ -176,11 +176,6 @@ def _execute_tool_call(tool_call):
         "tool_call_id": tool_call.get('id'),
     }
 
-
-def _prepare_chat_conversation(messages):
-    return [{"role": "system", "content": CHAT_SYSTEM_PROMPT}] + list(messages)
-
-
 def _resolve_tool_calls(conversation, response):
     """Run any requested tools and return an updated conversation for the final reply."""
     data = get_ai_response_data(response)
@@ -194,29 +189,6 @@ def _resolve_tool_calls(conversation, response):
     for tool_call in tool_calls:
         conversation.append(_execute_tool_call(tool_call))
     return conversation, assistant_message, True
-
-
-def ai_assistant_chat(messages):
-    conversation = _prepare_chat_conversation(messages)
-
-    try:
-        response = call_ai_api(conversation, tools=assistant_tools)
-        if isinstance(response, dict):
-            return response
-
-        conversation, assistant_message, used_tools = _resolve_tool_calls(conversation, response)
-        if used_tools:
-            response = call_ai_api(conversation, tools=assistant_tools)
-            if isinstance(response, dict):
-                return response
-            data = get_ai_response_data(response)
-            assistant_message = data.get('message') or {}
-
-        return {'message': assistant_message.get('content')}
-    except Exception as e:
-        logger.error(f"Error in ai_assistant_chat: {repr(e)}")
-        return response.json() if hasattr(response, 'json') else response
-
 
 def _iter_sse_data(response):
     for raw_line in response.iter_lines(decode_unicode=True):
@@ -321,7 +293,7 @@ def ai_assistant_chat_stream(messages):
     Generator of websocket-friendly events:
     {"type": "token", "content": "..."} | {"type": "done"} | {"type": "error", ...}
     """
-    conversation = _prepare_chat_conversation(messages)
+    conversation = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}] + list(messages)
 
     try:
         stream = stream_ai_completion(conversation, tools=assistant_tools)
