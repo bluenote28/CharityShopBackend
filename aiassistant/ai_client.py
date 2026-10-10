@@ -63,8 +63,7 @@ def _message_text(message):
             return value.strip()
     return ""
 
-
-def _build_payload(messages, tools=None, stream=False):
+def call_ai_api(messages, tools=None, stream=False):
     payload = {
         "model": "gemma-4-31B-it",
         "messages": messages,
@@ -72,27 +71,22 @@ def _build_payload(messages, tools=None, stream=False):
         "temperature": 0.3,
         "stream": stream,
     }
+
     if tools:
         payload["tools"] = tools
-    return payload
 
-
-def _auth_headers():
-    return {
+    headers = {
         "Authorization": "Bearer " + (API_KEY or ""),
         "Content-Type": "application/json",
     }
 
-
-def call_ai_api(messages, tools=None):
-    payload = _build_payload(messages, tools=tools, stream=False)
-
     try:
         return requests.post(
             BASE_URL,
-            headers=_auth_headers(),
+            headers=headers,
             json=payload,
             timeout=90,
+            stream=payload['stream'],
         )
     except requests.RequestException as e:
         return {'detail': str(e)}
@@ -217,19 +211,13 @@ def stream_ai_completion(messages, tools=None):
     Yields token events as they arrive. Returns a final summary dict:
     {"finish_reason": str|None, "tool_calls": list|None, "content": str}
     """
-    payload = _build_payload(messages, tools=tools, stream=True)
+
     finish_reason = None
     tool_calls_by_index = {}
     content_parts = []
 
     try:
-        with requests.post(
-            BASE_URL,
-            headers=_auth_headers(),
-            json=payload,
-            timeout=90,
-            stream=True,
-        ) as response:
+        with call_ai_api(messages, tools=tools, stream=True) as response:
             if not response.ok:
                 try:
                     detail = _error_detail(response.json()) or INVALID_AI_DESCRIPTION
