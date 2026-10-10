@@ -23,7 +23,7 @@ class AiChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None, bytes_data=None):
         if not text_data:
-            await self._send_json({
+            await self.send({
                 'type': 'error',
                 'detail': 'Invalid chat messages',
             })
@@ -32,7 +32,7 @@ class AiChatConsumer(AsyncWebsocketConsumer):
         try:
             payload = json.loads(text_data)
         except json.JSONDecodeError:
-            await self._send_json({
+            await self.send({
                 'type': 'error',
                 'detail': 'Invalid JSON',
             })
@@ -40,7 +40,7 @@ class AiChatConsumer(AsyncWebsocketConsumer):
 
         messages = payload.get('messages')
         if not isinstance(messages, list):
-            await self._send_json({
+            await self.send({
                 'type': 'error',
                 'detail': 'Invalid chat messages',
             })
@@ -48,10 +48,10 @@ class AiChatConsumer(AsyncWebsocketConsumer):
 
         try:
             async for event in self._iter_stream_events(messages):
-                await self._send_json(event)
+                await self.send(text_data=json.dumps(event))
         except Exception:
             logger.exception('Error streaming AI chat response')
-            await self._send_json({
+            await self.send({
                 'type': 'error',
                 'detail': 'AI chat is unavailable',
             })
@@ -80,6 +80,3 @@ class AiChatConsumer(AsyncWebsocketConsumer):
             if event is None:
                 break
             yield event
-
-    async def _send_json(self, payload):
-        await self.send(text_data=json.dumps(payload))
